@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { ArrowRight, ShoppingBag, Clock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CategoryCard } from '@/components/category-card'
-import { ProductCarousel } from '@/components/product-carousel'
 import { createClient } from '@/lib/supabase/server'
+import { ProductCarousel } from '@/components/product-carousel'
 
 export const revalidate = 60
 
@@ -22,11 +22,13 @@ export default async function HomePage() {
     .gt('stock', 0)
     .limit(24)
 
+  
+
   return (
     <div className="pb-16">
 
       {/* HERO — dos columnas */}
-      <section className="bg-warm-gradient relative overflow-hidden">
+      <section className="bg-warm-gradient relative">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
 
@@ -83,11 +85,13 @@ export default async function HomePage() {
         </div>
 
         {/* Carrusel de productos — pegado abajo del hero */}
-        {products && products.length > 0 && (
-          <div className="pb-8">
-            <ProductCarousel products={products as any} />
-          </div>
-        )}
+{products && products.length > 0 && (
+  <div className="pb-8">
+    <ProductCarousel products={products as any} />
+  </div>
+)}
+
+        
       </section>
 
       {/* CÓMO FUNCIONA */}

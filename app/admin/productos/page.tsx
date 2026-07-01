@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
-import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Search, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ImportProductsSheet } from '@/components/import-products-sheet'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -32,6 +33,7 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
@@ -187,10 +189,16 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold">Productos</h1>
           <p className="text-muted-foreground">Gestiona el catalogo de productos</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true) }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo producto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Importar Excel
+          </Button>
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true) }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo producto
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -327,7 +335,10 @@ export default function AdminProductsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unidad">Unidad</SelectItem>
-                  <SelectItem value="kg">Kilogramo</SelectItem>
+                  <SelectItem value="g">Gramo (g) — precio por 100g</SelectItem>
+                  <SelectItem value="kg">Kilogramo (kg)</SelectItem>
+                  <SelectItem value="litro">Litro</SelectItem>
+                  <SelectItem value="pack">Pack</SelectItem>
                   <SelectItem value="litro">Litro</SelectItem>
                   <SelectItem value="pack">Pack</SelectItem>
                 </SelectContent>
@@ -372,6 +383,13 @@ export default function AdminProductsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportProductsSheet
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        categories={categories}
+        onImported={loadData}
+      />
     </div>
   )
 }

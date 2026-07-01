@@ -46,6 +46,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     let channel: any
+    let mounted = true
 
     const load = async () => {
       const { id } = await params
@@ -58,28 +59,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .eq('user_id', user!.id)
         .single()
 
+      if (!mounted) return
+
       setOrder(data)
       setLoading(false)
 
-      // Realtime: suscribirse DESPUÉS de cargar
-      channel = supabase
-        .channel(`order-detail-${id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${id}`,
-        }, (payload) => {
-          setOrder((prev: any) => ({ ...prev, ...payload.new }))
-          const cfg = statusConfig[payload.new.status as keyof typeof statusConfig]
-          if (cfg) toast.info(`Estado actualizado: ${cfg.label}`)
-        })
-        .subscribe()
+      channel = supabase.channel(`order-${id}-${Date.now()}`)
+      channel.on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${id}`,
+      }, (payload: any) => {
+        if (!mounted) return
+        setOrder((prev: any) => ({ ...prev, ...payload.new }))
+        const cfg = statusConfig[payload.new.status as keyof typeof statusConfig]
+        if (cfg) toast.info(`Estado actualizado: ${cfg.label}`)
+      })
+      channel.subscribe()
     }
 
     load()
 
     return () => {
+      mounted = false
       if (channel) supabase.removeChannel(channel)
     }
   }, [])

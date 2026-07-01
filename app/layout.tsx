@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const inter = Inter({ 
@@ -28,10 +29,18 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${playfair.variable} bg-background`}>
-      <body className="font-sans antialiased min-h-screen">
-        {children}
-        <Toaster position="top-center" richColors />
+    <html lang="es" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+      <body className="font-sans antialiased min-h-screen bg-background">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <div id="portal-root" />
+          <Toaster position="top-center" richColors closeButton duration={3000} />
+        </ThemeProvider>
       </body>
     </html>
   )

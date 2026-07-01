@@ -58,15 +58,14 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       setOrder(data)
       setLoading(false)
 
-      // Realtime
-      const channel = supabase
-        .channel(`admin-order-${id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}`
-        }, (payload) => {
-          setOrder((prev: any) => ({ ...prev, ...payload.new }))
-        })
-        .subscribe()
+      // Realtime — canal creado ANTES del .on()
+      const channel = supabase.channel(`admin-order-${id}-${Date.now()}`)
+      channel.on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}`
+      }, (payload) => {
+        setOrder((prev: any) => ({ ...prev, ...payload.new }))
+      })
+      channel.subscribe()
 
       return () => { supabase.removeChannel(channel) }
     }
