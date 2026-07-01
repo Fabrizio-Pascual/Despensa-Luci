@@ -141,7 +141,7 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          ) : mounted ? (
             <div className="flex items-center gap-1">
               <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
                 <Link href="/auth/login">Ingresar</Link>
@@ -150,7 +150,7 @@ export function Header() {
                 <Link href="/auth/sign-up">Registrarse</Link>
               </Button>
             </div>
-          )}
+          ) : null}
 
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

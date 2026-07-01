@@ -193,10 +193,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
       {order.status === 'completed' && (
-        <Card className="border-green-500 bg-green-50">
+        <Card className="border-green-500/50 bg-green-500/10">
           <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <p className="font-medium">¡Gracias por tu compra! Volvé pronto. 🧡</p>
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <p className="font-medium text-foreground">¡Gracias por tu compra! Volvé pronto. 🧡</p>
           </CardContent>
         </Card>
       )}

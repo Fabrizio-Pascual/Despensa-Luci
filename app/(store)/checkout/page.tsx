@@ -76,20 +76,6 @@ export default function CheckoutPage() {
 
       if (itemsError) throw itemsError
 
-      // If payment is boucher, create debt record
-      if (paymentMethod === 'boucher') {
-        const { error: debtError } = await supabase
-          .from('debts')
-          .insert({
-            user_id: user.id,
-            order_id: order.id,
-            amount: total,
-            notes: `Pedido #${order.id.slice(0, 8)}`
-          })
-
-        if (debtError) throw debtError
-      }
-
       // Update product stock
       for (const item of items) {
         await supabase
