@@ -35,38 +35,40 @@ export function AdminNotifications() {
   }
 
   useEffect(() => {
+    let mounted = true
     loadNotifications()
 
-    const channel = supabase.channel('admin-notifications')
+    const channel = supabase.channel(`admin-notifs-${Date.now()}`)
     channel.on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'notifications',
     }, (payload) => {
+      if (!mounted) return
       setNotifications(prev => [payload.new as Notification, ...prev])
-      toast.info(payload.new.title, { description: payload.new.message })
+      toast.info((payload.new as Notification).title, {
+        description: (payload.new as Notification).message
+      })
     })
     channel.subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      mounted = false
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const markAllRead = async () => {
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('is_read', false)
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false)
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
   const formatTime = (date: string) => {
-    const d = new Date(date)
-    const now = new Date()
-    const diff = Math.floor((now.getTime() - d.getTime()) / 1000 / 60)
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 60000)
     if (diff < 1) return 'Ahora'
     if (diff < 60) return `Hace ${diff} min`
     if (diff < 1440) return `Hace ${Math.floor(diff / 60)}h`
-    return d.toLocaleDateString('es-AR')
+    return new Date(date).toLocaleDateString('es-AR')
   }
 
   return (
