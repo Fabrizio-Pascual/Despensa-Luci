@@ -16,12 +16,37 @@ export function Header() {
   const [user, setUser] = useState<{ email?: string } | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
   const { itemCount } = useCart()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      if (user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        setProfile(data)
+      }
+      setAuthLoading(false)
+    }
+    getUser()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
+      setUser(session?.user || null)
+      if (session?.user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+        setProfile(data)
+      } else {
+        setProfile(null)
+      }
+      setAuthLoading(false)
+    })
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   useEffect(() => {
     const getUser = async () => {
@@ -141,7 +166,7 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : mounted ? (
+          ) : authLoading ? null : mounted ? (
             <div className="flex items-center gap-1">
               <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
                 <Link href="/auth/login">Ingresar</Link>
@@ -190,7 +215,7 @@ export function Header() {
                 ))}
               </nav>
               {/* Footer del menu */}
-              {!user && (
+              {!user && !authLoading && (
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t space-y-2">
                   <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full">Ingresar</Button>
