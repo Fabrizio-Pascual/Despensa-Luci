@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AdminMobileNav } from '@/components/admin-mobile-nav'
-import { AdminNotifications } from '@/components/ui/admin-notifications'
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -26,14 +25,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Sidebar desktop */}
       <aside className="hidden md:flex w-64 bg-sidebar border-r border-sidebar-border flex-col shrink-0">
-        <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+        <div className="p-4 border-b border-sidebar-border">
           <Link href="/admin" className="flex items-center gap-2">
             <Store className="h-6 w-6 text-sidebar-primary" />
             <span className="font-bold text-sidebar-foreground">Admin Panel</span>
           </Link>
-          <AdminNotifications />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
@@ -53,16 +50,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </aside>
 
-      {/* Header mobile */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-sidebar border-b border-sidebar-border sticky top-0 z-40">
         <Link href="/admin" className="flex items-center gap-2">
           <Store className="h-6 w-6 text-sidebar-primary" />
           <span className="font-bold text-sidebar-foreground">Admin Panel</span>
         </Link>
-        <div className="flex items-center gap-1">
-          <AdminNotifications />
-          <AdminMobileNav />
-        </div>
+        <AdminMobileNav />
       </div>
 
       <main className="flex-1 overflow-auto">
