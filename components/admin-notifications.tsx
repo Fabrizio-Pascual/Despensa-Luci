@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,8 @@ export function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
   const supabase = useMemo(() => createClient(), [])
+  const channelRef = useRef<any>(null)
+  const subscribedRef = useRef(false)
 
   const unread = notifications.filter(n => !n.is_read).length
 
@@ -35,35 +37,37 @@ export function AdminNotifications() {
   }
 
   useEffect(() => {
-    let mounted = true
-    let channel: any = null
+    loadNotifications()
 
-    async function setup() {
-      await loadNotifications()
-      if (!mounted) return
+    // Evitar doble suscripción
+    if (subscribedRef.current) return
+    subscribedRef.current = true
 
-      channel = supabase.channel(`admin-notifs-${Date.now()}`)
-      
-      channel.on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-      }, (payload: any) => {
-        if (!mounted) return
-        setNotifications(prev => [payload.new as Notification, ...prev])
-        toast.info((payload.new as Notification).title, {
-          description: (payload.new as Notification).message
-        })
-      })
+    const channelName = `admin-notifs-${Math.random().toString(36).slice(2)}`
+    const channel = supabase.channel(channelName)
 
-      channel.subscribe()
-    }
+    channel.on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications',
+    }, (payload: any) => {
+      const n = payload.new as Notification
+      setNotifications(prev => [n, ...prev])
+      toast.info(n.title, { description: n.message })
+    })
 
-    setup()
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        channelRef.current = channel
+      }
+    })
 
     return () => {
-      mounted = false
-      if (channel) supabase.removeChannel(channel)
+      subscribedRef.current = false
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
   }, [])
 
@@ -86,7 +90,7 @@ export function AdminNotifications() {
         <Button variant="ghost" size="icon" className="relative text-sidebar-foreground hover:bg-sidebar-accent">
           <Bell className="h-5 w-5" />
           {unread > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold animate-pulse">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">
               {unread > 9 ? '9+' : unread}
             </span>
           )}
