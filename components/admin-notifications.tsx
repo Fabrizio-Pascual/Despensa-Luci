@@ -36,25 +36,34 @@ export function AdminNotifications() {
 
   useEffect(() => {
     let mounted = true
-    loadNotifications()
+    let channel: any = null
 
-    const channel = supabase.channel(`admin-notifs-${Date.now()}`)
-    channel.on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'notifications',
-    }, (payload) => {
+    async function setup() {
+      await loadNotifications()
       if (!mounted) return
-      setNotifications(prev => [payload.new as Notification, ...prev])
-      toast.info((payload.new as Notification).title, {
-        description: (payload.new as Notification).message
+
+      channel = supabase.channel(`admin-notifs-${Date.now()}`)
+      
+      channel.on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+      }, (payload: any) => {
+        if (!mounted) return
+        setNotifications(prev => [payload.new as Notification, ...prev])
+        toast.info((payload.new as Notification).title, {
+          description: (payload.new as Notification).message
+        })
       })
-    })
-    channel.subscribe()
+
+      channel.subscribe()
+    }
+
+    setup()
 
     return () => {
       mounted = false
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
     }
   }, [])
 
