@@ -52,7 +52,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null)
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('active')
   const supabase = createClient()
 
   const loadOrders = useCallback(async () => {
@@ -61,7 +61,9 @@ export default function AdminOrdersPage() {
       .select('*, profile:profiles(*), order_items(*, product:products(*))')
       .order('created_at', { ascending: false })
 
-    if (filterStatus !== 'all') {
+    if (filterStatus === 'active') {
+      query = query.in('status', ['pending', 'preparing', 'ready'])
+    } else if (filterStatus !== 'all') {
       query = query.eq('status', filterStatus)
     }
 
@@ -191,6 +193,7 @@ export default function AdminOrdersPage() {
             <SelectValue placeholder="Filtrar por estado" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="active">🟢 Activos</SelectItem>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Pendientes</SelectItem>
             <SelectItem value="preparing">Preparando</SelectItem>
