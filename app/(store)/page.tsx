@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CategoryCard } from '@/components/category-card'
 import { ProductCarousel } from '@/components/product-carousel'
+import { ReviewsSection } from '@/components/reviews-section'
 import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
@@ -155,31 +156,7 @@ export default async function HomePage() {
       </section>
 
       {/* RESEÑAS */}
-      <section className="container mx-auto px-4 pb-14">
-        <div className="mb-8">
-          <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Lo que dicen nuestros clientes</p>
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">Opiniones</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { name: 'María G.', comment: 'Rapidísimo y muy cómodo. Hago el pedido desde casa y en minutos está listo para retirar.', stars: 5 },
-            { name: 'Carlos R.', comment: 'La despensa de siempre pero mucho más práctica. Los precios son los mismos y la atención excelente.', stars: 5 },
-            { name: 'Laura M.', comment: 'Me salvó más de una vez cuando necesitaba algo urgente. Lo recomiendo a todo el barrio.', stars: 5 },
-          ].map((review, i) => (
-            <Card key={i} className="rounded-2xl shadow-warm border border-border/60">
-              <CardContent className="p-6">
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: review.stars }).map((_, j) => (
-                    <Star key={j} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed italic">"{review.comment}"</p>
-                <p className="text-sm font-semibold text-foreground mt-4">{review.name}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <ReviewsSection />
 
       {/* UBICACIÓN */}
       <section className="container mx-auto px-4 pb-14">
