@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { ArrowRight, ShoppingBag, Clock, Sparkles, MapPin, Star } from 'lucide-react'
+import { ArrowRight, ShoppingBag, Clock, Sparkles, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { CategoryCard } from '@/components/category-card'
 import { ProductCarousel } from '@/components/product-carousel'
 import { ReviewsSection } from '@/components/reviews-section'
@@ -11,20 +10,15 @@ export const revalidate = 60
 
 export default async function HomePage() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: categories } = await supabase
-    .from('categories')
-    .select('*')
-    .order('display_order', { ascending: true })
+    .from('categories').select('*').order('display_order', { ascending: true })
 
   const { data: products } = await supabase
     .from('products')
     .select('*, category:categories(name, slug)')
-    .eq('is_active', true)
-    .gt('stock', 0)
-    .limit(24)
+    .eq('is_active', true).gt('stock', 0).limit(24)
 
   return (
     <div className="pb-16">
@@ -48,12 +42,8 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-wrap gap-3 mt-8">
                 <Button size="lg" asChild className="rounded-full px-8 shadow-warm-lg">
-                  <Link href="#categorias">
-                    Ver productos
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
+                  <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
-                {/* Solo mostrar Ingresar si NO está logueado */}
                 {!user && (
                   <Button size="lg" variant="outline" asChild className="rounded-full px-8">
                     <Link href="/auth/login">Ingresar</Link>
@@ -92,36 +82,22 @@ export default async function HomePage() {
       {/* CÓMO FUNCIONA */}
       <section className="container mx-auto px-4 py-14">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-start gap-4 bg-card rounded-2xl p-6 shadow-warm border border-border/60">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-primary" />
+          {[
+            { icon: <ShoppingBag className="h-5 w-5 text-primary" />, step: 'Paso 1', title: 'Elegí y pedí', desc: 'Agregá lo que necesitás al carrito y confirmá en segundos.' },
+            { icon: <Clock className="h-5 w-5 text-primary" />, step: 'Paso 2', title: 'Lo preparamos', desc: 'Armamos tu pedido y te avisamos cuando está listo.' },
+            { icon: <span className="text-lg">🏪</span>, step: 'Paso 3', title: 'Retirás sin esperar', desc: 'Venís, mostrás tu código y te llevás todo listo.' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-start gap-4 bg-card rounded-2xl p-6 shadow-warm border border-border/60">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">{item.step}</p>
+                <h3 className="font-semibold text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Paso 1</p>
-              <h3 className="font-semibold text-foreground">Elegí y pedí</h3>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Agregá lo que necesitás al carrito y confirmá en segundos.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4 bg-card rounded-2xl p-6 shadow-warm border border-border/60">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Paso 2</p>
-              <h3 className="font-semibold text-foreground">Lo preparamos</h3>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Armamos tu pedido y te avisamos cuando está listo.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4 bg-card rounded-2xl p-6 shadow-warm border border-border/60">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="text-lg">🏪</span>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Paso 3</p>
-              <h3 className="font-semibold text-foreground">Retirás sin esperar</h3>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Venís, mostrás tu código y te llevás todo listo.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -138,9 +114,7 @@ export default async function HomePage() {
         </div>
         {categories && categories.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
+            {categories.map((cat) => <CategoryCard key={cat.id} category={cat} />)}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground">
@@ -155,26 +129,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* RESEÑAS */}
+      {/* RESEÑAS — componente client que carga desde Supabase */}
       <ReviewsSection />
 
-      {/* UBICACIÓN */}
+      {/* UBICACIÓN — Villa San Nicolás, Malagueño */}
       <section className="container mx-auto px-4 pb-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
           <div>
             <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Dónde estamos</p>
             <h2 className="font-display text-3xl font-bold text-foreground mb-3">Encontranos en el barrio</h2>
-            <p className="text-muted-foreground mb-4">Cosquín, Córdoba — abiertos todos los días, a toda hora para vos.</p>
+            <p className="text-muted-foreground mb-2">
+              <span className="font-medium">Segundo Dutari Rodríguez 746</span><br />
+              Villa San Nicolás, Malagueño, Córdoba
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">Abiertos todos los días para vos 🧡</p>
             <Button asChild variant="outline" className="rounded-full gap-2">
-              <a href="https://maps.google.com/?q=Cosquin,Cordoba,Argentina" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=-31.434700519515722,-64.4549122429774"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <MapPin className="h-4 w-4 text-primary" />
-                Abrir en Google Maps
+                Cómo llegar
               </a>
             </Button>
           </div>
-          <div className="rounded-2xl overflow-hidden shadow-warm-lg border border-border/60 h-56">
+          <div className="rounded-2xl overflow-hidden shadow-warm-lg border border-border/60 h-64">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13508.!2d-64.4646!3d-31.2478!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x943278b4b1234567%3A0x1234567890abcdef!2sCosqu%C3%ADn%2C%20C%C3%B3rdoba!5e0!3m2!1ses!2sar!4v1234567890"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3a!2d-64.4549122429774!3d-31.434700519515722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDI2JzA0LjkiUyA2NMKwMjcnMTcuNyJX!5e0!3m2!1ses!2sar!4v1"
               width="100%"
               height="100%"
               style={{ border: 0 }}
@@ -186,11 +168,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CTA — solo si NO está logueado */}
+      {/* CTA — solo si no está logueado */}
       {!user && (
         <section className="container mx-auto px-4">
           <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-12 md:px-14 md:py-16 text-center shadow-warm-lg">
-            <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute -top-8 -left-8 text-[180px] opacity-[0.08]">🧡</div>
               <div className="absolute -bottom-8 -right-8 text-[180px] opacity-[0.08]">🛒</div>
             </div>
@@ -206,7 +188,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
     </div>
   )
 }
