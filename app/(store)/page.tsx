@@ -145,13 +145,13 @@ export default async function HomePage() {
             <p className="text-sm text-muted-foreground mb-4">Abiertos todos los días para vos 🧡</p>
             <Button asChild variant="outline" className="rounded-full gap-2">
               <a
-                href="https://www.google.com/maps/search/?api=1&query=-31.434700519515722,-64.4549122429774"
+                href="https://www.google.com/maps/dir/?api=1&destination=-31.434700519515722,-64.4549122429774"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <MapPin className="h-4 w-4 text-primary" />
-                Cómo llegar
-              </a>
+                Cómo llegar 
+              </a >
             </Button>
           </div>
           <div className="rounded-2xl overflow-hidden shadow-warm-lg border border-border/60 h-64">
@@ -188,6 +188,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+      <a href="mailto:fpascual624@gmail.com?subject=Ayuda%20Despensa%20Luci">
+  Contactar soporte
+</a>
     </div>
   )
 }
