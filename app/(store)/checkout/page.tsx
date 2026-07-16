@@ -20,7 +20,6 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
 }
 
-// Cambio mínimo disponible — el admin puede configurar esto
 const CAMBIO_DISPONIBLE = 5000
 
 export default function CheckoutPage() {
@@ -39,10 +38,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (items.length === 0) { toast.error('Tu carrito está vacío'); return }
-    if (paymentMethod === 'efectivo' && !cashAmount) {
-      toast.error('Indicá con cuánto vas a pagar')
-      return
-    }
+    if (paymentMethod === 'efectivo' && !cashAmount) { toast.error('Indicá con cuánto vas a pagar'); return }
     if (sinCambio) { toast.error('El monto es menor al total'); return }
 
     setIsSubmitting(true)
@@ -57,13 +53,7 @@ export default function CheckoutPage() {
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert({
-          user_id: user.id,
-          status: 'pending',
-          payment_method: paymentMethod,
-          total,
-          notes: notaFinal || null
-        })
+        .insert({ user_id: user.id, status: 'pending', payment_method: paymentMethod, total, notes: notaFinal || null })
         .select().single()
 
       if (orderError) throw orderError
@@ -73,19 +63,25 @@ export default function CheckoutPage() {
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.product.price,
-        subtotal: item.product.price * item.quantity
+        subtotal: item.product.price * item.quantity,
+        variant_name: item.variant_name || null,
       }))
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
 
+      // Descontar stock — de la variante si tiene, sino del producto
       for (const item of items) {
-        await supabase.from('products')
-          .update({ stock: item.product.stock - item.quantity })
-          .eq('id', item.product_id)
+        if (item.variant_id) {
+          const { data: variant } = await supabase.from('product_variants').select('stock').eq('id', item.variant_id).single()
+          if (variant) {
+            await supabase.from('product_variants').update({ stock: variant.stock - item.quantity }).eq('id', item.variant_id)
+          }
+        } else {
+          await supabase.from('products').update({ stock: item.product.stock - item.quantity }).eq('id', item.product_id)
+        }
       }
 
-      // Notificar al admin via push
       try {
         const { data: admins } = await supabase.from('profiles').select('id').eq('is_admin', true)
         for (const admin of admins || []) {
@@ -138,43 +134,48 @@ export default function CheckoutPage() {
       <h1 className="text-3xl font-bold mb-8">Finalizar pedido</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Items */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader><CardTitle>Tu carrito ({items.length} productos)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-4 py-4 border-b last:border-0">
-                  <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {item.product.image_url ? (
-                      <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <Package className="h-8 w-8 text-muted-foreground/50" />
+              {items.map((item) => {
+                const variantId = item.variant_id || null
+                return (
+                  <div key={item.id} className="flex gap-4 py-4 border-b last:border-0">
+                    <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {item.product.image_url ? (
+                        <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground/50" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium">
+                        {item.product.name}
+                        {item.variant_name && <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-10 text-center font-medium">{item.quantity}</span>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-destructive hover:text-destructive" onClick={() => removeFromCart(item.product_id, variantId)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium">{item.product.name}</h4>
-                    <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity - 1)}>
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-10 text-center font-medium">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity + 1)} disabled={item.quantity >= item.product.stock}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-destructive hover:text-destructive" onClick={() => removeFromCart(item.product_id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatPrice(item.product.price * item.quantity)}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatPrice(item.product.price * item.quantity)}</p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </CardContent>
           </Card>
 
@@ -189,7 +190,6 @@ export default function CheckoutPage() {
           </Card>
         </div>
 
-        {/* Pago y resumen */}
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -209,19 +209,12 @@ export default function CheckoutPage() {
                   </Label>
                 </div>
 
-                {/* Campo de cambio para efectivo */}
                 {paymentMethod === 'efectivo' && (
                   <div className="ml-6 space-y-2 pb-1">
                     <Label className="text-sm">¿Con cuánto vas a pagar?</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                      <Input
-                        type="number"
-                        className="pl-7"
-                        placeholder={total.toString()}
-                        value={cashAmount}
-                        onChange={e => setCashAmount(e.target.value)}
-                      />
+                      <Input type="number" className="pl-7" placeholder={total.toString()} value={cashAmount} onChange={e => setCashAmount(e.target.value)} />
                     </div>
                     {cashNum > 0 && !sinCambio && (
                       <div className={`rounded-lg p-3 text-sm ${cambioInsuficiente ? 'bg-destructive/10 border border-destructive/30' : 'bg-green-50 border border-green-200 dark:bg-green-950/30 dark:border-green-800'}`}>
@@ -237,9 +230,7 @@ export default function CheckoutPage() {
                         )}
                       </div>
                     )}
-                    {sinCambio && (
-                      <p className="text-sm text-destructive">El monto es menor al total</p>
-                    )}
+                    {sinCambio && <p className="text-sm text-destructive">El monto es menor al total</p>}
                   </div>
                 )}
 
@@ -288,9 +279,7 @@ export default function CheckoutPage() {
             </CardFooter>
           </Card>
 
-          <p className="text-sm text-muted-foreground text-center">
-            Te notificaremos cuando tu pedido esté listo para retirar 🧡
-          </p>
+          <p className="text-sm text-muted-foreground text-center">Te notificaremos cuando tu pedido esté listo para retirar 🧡</p>
         </div>
       </div>
     </div>
