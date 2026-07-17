@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, CheckCircle2, XCircle as XCircleIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -40,17 +42,14 @@ function formatDate(date: string) {
   })
 }
 
-const CAMBIO_OPTIONS = [
-  { label: '🍬 Caramelos', value: 'caramelos', max: 500 },
-  { label: '🍫 Alfajor', value: 'alfajor', max: 800 },
-  { label: '🍭 Chicles', value: 'chicles', max: 400 },
-]
-
 export default function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [cambioDialog, setCambioDialog] = useState(false)
+  const [cambioItem, setCambioItem] = useState('')
+  const [cambioMonto, setCambioMonto] = useState('')
+  const [sendingCambio, setSendingCambio] = useState(false)
   const channelRef = useRef<any>(null)
   const subscribedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
@@ -75,6 +74,12 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}`
       }, (payload: any) => {
         setOrder((prev: any) => ({ ...prev, ...payload.new }))
+        if (payload.new.cambio_respuesta && payload.new.cambio_respuesta !== payload.old?.cambio_respuesta) {
+          const aceptado = payload.new.cambio_respuesta === 'aceptado'
+          toast[aceptado ? 'success' : 'warning'](
+            aceptado ? '✓ El cliente aceptó el cambio propuesto' : '✗ El cliente no aceptó el cambio propuesto'
+          )
+        }
       })
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') channelRef.current = channel
@@ -99,7 +104,6 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     } else {
       const label = statusConfig[newStatus as keyof typeof statusConfig]?.label
       toast.success(`Pedido actualizado: ${label}`)
-
       if (newStatus === 'ready' && order.profile?.id) {
         try {
           await fetch('/api/push/send', {
@@ -118,22 +122,38 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     setUpdating(false)
   }
 
-  const sendCambioMessage = async (option: typeof CAMBIO_OPTIONS[0]) => {
+  const sendCambioMessage = async () => {
+    if (!cambioItem.trim() || !cambioMonto) {
+      toast.error('Completá el producto y el monto')
+      return
+    }
+    setSendingCambio(true)
     try {
+      // Guardar la propuesta en la orden para que el cliente vea los botones
+      await supabase.from('orders').update({
+        cambio_propuesta: cambioItem.trim(),
+        cambio_monto: parseFloat(cambioMonto),
+        cambio_respuesta: null,
+      }).eq('id', order.id)
+
       await fetch('/api/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: order.profile?.id,
-          title: '💬 Mensaje de Despensa Luci',
-          body: `No tenemos cambio exacto. ¿Te parece bien que el vuelto sea en ${option.label}?`,
+          title: '💬 No tenemos cambio exacto',
+          body: `¿Te parece bien recibir ${formatPrice(parseFloat(cambioMonto))} en ${cambioItem.trim()}?`,
           url: `/dashboard/pedidos/${order.id}`
         })
       })
-      toast.success(`Mensaje enviado a ${order.profile?.full_name}`)
+      toast.success(`Propuesta enviada a ${order.profile?.full_name}`)
       setCambioDialog(false)
+      setCambioItem('')
+      setCambioMonto('')
     } catch {
       toast.error('Error al enviar el mensaje')
+    } finally {
+      setSendingCambio(false)
     }
   }
 
@@ -207,6 +227,34 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         </Card>
       )}
 
+      {/* Estado de la propuesta de cambio */}
+      {order.cambio_propuesta && (
+        <Card className={
+          order.cambio_respuesta === 'aceptado' ? 'border-green-500/40 bg-green-500/5' :
+          order.cambio_respuesta === 'rechazado' ? 'border-destructive/40 bg-destructive/5' :
+          'border-yellow-500/40 bg-yellow-500/5'
+        }>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm font-medium">
+              Propuesta enviada: {formatPrice(order.cambio_monto)} en <strong>{order.cambio_propuesta}</strong>
+            </p>
+            {order.cambio_respuesta === 'aceptado' && (
+              <p className="text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" /> El cliente aceptó
+              </p>
+            )}
+            {order.cambio_respuesta === 'rechazado' && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <XCircleIcon className="h-4 w-4" /> El cliente no aceptó — coordiná otra solución
+              </p>
+            )}
+            {!order.cambio_respuesta && (
+              <p className="text-xs text-muted-foreground">Esperando respuesta del cliente...</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {isEfectivo && isActive && (
         <Button
           variant="outline"
@@ -214,7 +262,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           onClick={() => setCambioDialog(true)}
         >
           <Candy className="h-4 w-4" />
-          No tengo cambio — avisar al cliente
+          No tengo cambio — proponer al cliente
         </Button>
       )}
 
@@ -225,7 +273,6 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         </Button>
       )}
 
-      {/* Productos — con imagen y sabor */}
       <Card>
         <CardHeader><CardTitle>Productos del pedido</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -233,7 +280,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <div key={item.id} className="flex items-center gap-3 py-2 border-b last:border-0">
               <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                 {item.product?.image_url ? (
-                  <Image src={item.product.image_url} alt={item.product?.name || ''} fill className="object-cover" unoptimized />
+                  <Image src={item.product.image_url} alt={item.product?.name || ''} fill className="object-contain p-1" unoptimized />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center">
                     <Package className="h-6 w-6 text-muted-foreground/50" />
@@ -243,9 +290,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               <div className="flex-1">
                 <p className="font-medium">
                   {item.product?.name}
-                  {item.variant_name && (
-                    <span className="text-primary font-semibold"> · {item.variant_name}</span>
-                  )}
+                  {item.variant_name && <span className="text-primary font-semibold"> · {item.variant_name}</span>}
                 </p>
                 <p className="text-sm text-muted-foreground">{item.quantity} x {formatPrice(item.unit_price)}</p>
               </div>
@@ -282,27 +327,43 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         </Button>
       )}
 
+      {/* Dialog con input libre para producto y monto */}
       <Dialog open={cambioDialog} onOpenChange={setCambioDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Dar vuelto en productos?</DialogTitle>
+            <DialogTitle>Proponer vuelto en productos</DialogTitle>
             <DialogDescription>
-              Elegí con qué producto dar el vuelto. Se le enviará una notificación al cliente preguntándole si está de acuerdo.
+              Indicá qué le ofrecés al cliente y por cuánto. Se le va a preguntar si acepta.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-3 py-2">
-            {CAMBIO_OPTIONS.map((opt) => (
-              <Button key={opt.value} variant="outline" className="justify-start gap-3 h-14 text-base" onClick={() => sendCambioMessage(opt)}>
-                <span className="text-2xl">{opt.label.split(' ')[0]}</span>
-                <div className="text-left">
-                  <p className="font-medium">{opt.label.split(' ').slice(1).join(' ')}</p>
-                  <p className="text-xs text-muted-foreground">Hasta {formatPrice(opt.max)} de vuelto</p>
-                </div>
-              </Button>
-            ))}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>¿Qué le ofrecés?</Label>
+              <Input
+                placeholder="Ej: caramelos, un alfajor, chicles..."
+                value={cambioItem}
+                onChange={e => setCambioItem(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Monto del vuelto</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input
+                  type="number"
+                  className="pl-7"
+                  placeholder="200"
+                  value={cambioMonto}
+                  onChange={e => setCambioMonto(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCambioDialog(false)}>Cancelar</Button>
+            <Button onClick={sendCambioMessage} disabled={sendingCambio}>
+              {sendingCambio ? 'Enviando...' : 'Enviar propuesta'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
