@@ -82,13 +82,13 @@ export function ProductCard({ product }: { product: Product }) {
     <Card className="group overflow-hidden transition-all hover:shadow-md card-hover">
       <CardContent className="p-0">
         {/* Imagen */}
-        <div className="relative aspect-square bg-muted">
+        <div className="relative aspect-square bg-muted p-3">
           {effectiveImage ? (
             <Image
               src={effectiveImage}
               alt={product.name}
               fill
-              className="object-cover transition-transform group-hover:scale-105"
+              className="object-contain p-2 transition-transform group-hover:scale-105"
               unoptimized
             />
           ) : (
