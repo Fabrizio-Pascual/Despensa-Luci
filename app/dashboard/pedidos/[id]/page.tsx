@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,7 +42,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [cancelDialog, setCancelDialog] = useState(false)
   const [cancelling, setCancelling] = useState(false)
-  const supabase = createClient()
+  const [respondiendo, setRespondiendo] = useState(false)
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     let channel: any
@@ -60,27 +61,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .single()
 
       if (!mounted) return
-
       setOrder(data)
       setLoading(false)
 
       channel = supabase.channel(`order-${id}-${Date.now()}`)
       channel.on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `id=eq.${id}`,
+        event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}`,
       }, (payload: any) => {
         if (!mounted) return
         setOrder((prev: any) => ({ ...prev, ...payload.new }))
         const cfg = statusConfig[payload.new.status as keyof typeof statusConfig]
-        if (cfg) toast.info(`Estado actualizado: ${cfg.label}`)
+        if (cfg && payload.new.status !== payload.old?.status) toast.info(`Estado actualizado: ${cfg.label}`)
+        if (payload.new.cambio_propuesta && payload.new.cambio_propuesta !== payload.old?.cambio_propuesta) {
+          toast.info('💬 El local te propuso un cambio en productos')
+        }
       })
       channel.subscribe()
     }
 
     load()
-
     return () => {
       mounted = false
       if (channel) supabase.removeChannel(channel)
@@ -93,11 +92,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       .from('orders')
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', order.id)
-
     if (error) toast.error('No se pudo cancelar el pedido')
     else toast.success('Pedido cancelado')
     setCancelling(false)
     setCancelDialog(false)
+  }
+
+  const responderCambio = async (respuesta: 'aceptado' | 'rechazado') => {
+    setRespondiendo(true)
+    const { error } = await supabase
+      .from('orders')
+      .update({ cambio_respuesta: respuesta })
+      .eq('id', order.id)
+
+    if (error) {
+      toast.error('Error al enviar tu respuesta')
+    } else {
+      setOrder((prev: any) => ({ ...prev, cambio_respuesta: respuesta }))
+      toast.success(respuesta === 'aceptado' ? '¡Gracias! Le avisamos al local' : 'Le avisamos al local que no aceptás')
+    }
+    setRespondiendo(false)
   }
 
   if (loading) return (
@@ -132,16 +146,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* Barra de progreso */}
       {!isCancelled && (
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between relative">
               <div className="absolute left-0 right-0 top-4 h-0.5 bg-muted mx-8" />
-              <div
-                className="absolute left-8 top-4 h-0.5 bg-primary transition-all duration-500"
-                style={{ width: currentStep >= 0 ? `${(currentStep / (steps.length - 1)) * 100}%` : '0%' }}
-              />
+              <div className="absolute left-8 top-4 h-0.5 bg-primary transition-all duration-500"
+                style={{ width: currentStep >= 0 ? `${(currentStep / (steps.length - 1)) * 100}%` : '0%' }} />
               {steps.map((step, i) => {
                 const done = currentStep >= i
                 const active = currentStep === i
@@ -153,9 +164,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     } ${active ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                       <StepIcon className="h-4 w-4" />
                     </div>
-                    <span className={`text-xs font-medium ${done ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {stepLabels[i]}
-                    </span>
+                    <span className={`text-xs font-medium ${done ? 'text-primary' : 'text-muted-foreground'}`}>{stepLabels[i]}</span>
                   </div>
                 )
               })}
@@ -164,7 +173,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      {/* Código de retiro — SOLO si el pedido está activo */}
       {isActive && (
         <Card className="border-primary/40 bg-primary/5">
           <CardContent className="p-5">
@@ -176,14 +184,48 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <p className="text-4xl font-mono font-bold tracking-widest text-center py-2">
               {order.order_code || order.id.slice(0, 6).toUpperCase()}
             </p>
-            <p className="text-xs text-center text-muted-foreground mt-1">
-              Mostrá este código al retirar tu pedido
-            </p>
+            <p className="text-xs text-center text-muted-foreground mt-1">Mostrá este código al retirar tu pedido</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Mensajes de estado */}
+      {/* Propuesta de vuelto en productos */}
+      {order.cambio_propuesta && (
+        <Card className="border-yellow-500/40 bg-yellow-500/5">
+          <CardContent className="p-5 space-y-3">
+            <p className="font-semibold text-foreground">
+              💬 El local no tiene cambio exacto
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Te proponen darte <strong className="text-foreground">{formatPrice(order.cambio_monto)}</strong> de vuelto en <strong className="text-foreground">{order.cambio_propuesta}</strong>. ¿Estás de acuerdo?
+            </p>
+
+            {!order.cambio_respuesta ? (
+              <div className="flex gap-2">
+                <Button className="flex-1 gap-2" onClick={() => responderCambio('aceptado')} disabled={respondiendo}>
+                  <ThumbsUp className="h-4 w-4" />
+                  Sí, acepto
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => responderCambio('rechazado')} disabled={respondiendo}>
+                  <ThumbsDown className="h-4 w-4" />
+                  No, prefiero otra cosa
+                </Button>
+              </div>
+            ) : (
+              <div className={`rounded-lg p-3 text-sm font-medium ${
+                order.cambio_respuesta === 'aceptado'
+                  ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                  : 'bg-destructive/10 text-destructive'
+              }`}>
+                {order.cambio_respuesta === 'aceptado'
+                  ? '✓ Aceptaste esta propuesta'
+                  : '✗ Le avisamos al local que preferís otra cosa'}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {order.status === 'ready' && (
         <Card className="border-primary bg-primary/5">
           <CardContent className="p-4 flex items-center gap-3">
@@ -209,14 +251,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      {/* Productos */}
       <Card>
         <CardHeader><CardTitle>Productos</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {order.order_items?.map((item: any) => (
             <div key={item.id} className="flex justify-between py-2 border-b last:border-0">
               <div>
-                <p className="font-medium">{item.product?.name}</p>
+                <p className="font-medium">
+                  {item.product?.name}
+                  {item.variant_name && <span className="text-primary font-semibold"> · {item.variant_name}</span>}
+                </p>
                 <p className="text-sm text-muted-foreground">{item.quantity} x {formatPrice(item.unit_price)}</p>
               </div>
               <p className="font-medium">{formatPrice(item.subtotal)}</p>
@@ -225,7 +269,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </CardContent>
       </Card>
 
-      {/* Detalles */}
       <Card>
         <CardHeader><CardTitle>Detalles del pedido</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -258,9 +301,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Cancelar pedido?</DialogTitle>
-            <DialogDescription>
-              Esta acción no se puede deshacer.
-            </DialogDescription>
+            <DialogDescription>Esta acción no se puede deshacer.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCancelDialog(false)}>Volver</Button>
