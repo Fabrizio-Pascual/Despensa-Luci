@@ -21,30 +21,10 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // IMPORTANTE: no correr lógica pesada acá.
+  // Solo refrescamos la sesión / cookies.
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-
-  // Verificar si el usuario está baneado
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_banned, is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.is_banned && !path.startsWith('/auth')) {
-      await supabase.auth.signOut()
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/login'
-      url.searchParams.set('banned', '1')
-      return NextResponse.redirect(url)
-    }
-
-    // Admin solo para admins
-    if (path.startsWith('/admin') && !profile?.is_admin) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
 
   // Rutas que requieren login
   const protectedRoutes = ['/dashboard', '/checkout']
@@ -56,7 +36,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin sin login
+  // Admin: solo verificamos que haya login. La verificación de is_admin
+  // se hace DENTRO del layout del admin (server component), no acá.
   if (path.startsWith('/admin') && !user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
@@ -67,10 +48,4 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse
-}
-
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
 }
