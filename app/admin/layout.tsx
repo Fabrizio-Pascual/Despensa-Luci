@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: '/admin/ventas', label: 'Ventas', icon: BarChart3 },
     { href: '/admin/deudas', label: 'Deudas', icon: FileText },
     { href: '/admin/clientes', label: 'Clientes', icon: Users },
-    { href: '/admin/reseñas', label: 'Reseñas', icon: Star },
+    { href: '/admin/resenas', label: 'Reseñas', icon: Star },
   ]
 
   return (
