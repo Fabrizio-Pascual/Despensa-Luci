@@ -41,6 +41,15 @@ export interface Order {
   payment_method: 'efectivo' | 'debito' | 'boucher' | null
   total: number
   notes: string | null
+  order_code?: string | null
+  cambio_propuesta?: string | null
+  cambio_monto?: number | null
+  cambio_respuesta?: 'aceptado' | 'rechazado' | null
+  /** true mientras el admin habilitó que el cliente edite este pedido (falta un producto, etc.) */
+  edit_unlocked?: boolean
+  /** motivo que dejó el admin al habilitar la edición (ej: "Tomate perita") */
+  edit_note?: string | null
+  edited_by_customer_at?: string | null
   created_at: string
   updated_at: string
   profile?: Profile

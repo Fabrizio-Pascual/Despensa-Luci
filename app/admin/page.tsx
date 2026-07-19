@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { notifyUser, ORDER_STATUS_NOTIF } from '@/lib/notify'
 import { toast } from 'sonner'
 import type { Order, OrderItem, Product, Profile } from '@/lib/types'
 import { jsPDF } from 'jspdf'
@@ -104,12 +105,20 @@ export default function AdminOrdersPage() {
       if (error) throw error
 
       toast.success(`Pedido actualizado a: ${statusConfig[newStatus as keyof typeof statusConfig].label}`)
-      
-      if (newStatus === 'completed') {
-        const order = orders.find(o => o.id === orderId)
-        if (order) {
-          generateReceipt(order)
-        }
+
+      const order = orders.find(o => o.id === orderId)
+      const notif = ORDER_STATUS_NOTIF[newStatus]
+      if (notif && order?.profile?.id) {
+        notifyUser({
+          userId: order.profile.id,
+          title: notif.title,
+          body: notif.body(orderId),
+          url: `/dashboard/pedidos/${orderId}`,
+        })
+      }
+
+      if (newStatus === 'completed' && order) {
+        generateReceipt(order)
       }
 
       loadOrders()

@@ -44,19 +44,31 @@ function playNewOrderBeep() {
     const ctx = sharedAudioCtx
     if (!ctx) return
     const now = ctx.currentTime
-    // Dos tonos cortos, tipo "ding-dong", para que se note pero no moleste.
-    ;[[880, now], [660, now + 0.18]].forEach(([freq, start]) => {
+
+    // Melodía de 4 notas (sol-do-mi-sol agudo), más larga y más "musical"
+    // que el ding-dong anterior — pensada para que se note aunque el
+    // celular esté en el bolsillo, sin llegar a ser un ruido molesto.
+    const notes: [number, number, number][] = [
+      // [frecuencia, inicio, duración]
+      [784.0, 0.00, 0.16], // sol5
+      [1046.5, 0.16, 0.16], // do6
+      [1318.5, 0.32, 0.16], // mi6
+      [1568.0, 0.48, 0.42], // sol6 (la nota final, más larga)
+    ]
+
+    notes.forEach(([freq, offset, dur]) => {
+      const start = now + offset
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.type = 'sine'
-      osc.frequency.value = freq as number
-      gain.gain.setValueAtTime(0.0001, start as number)
-      gain.gain.exponentialRampToValueAtTime(0.35, (start as number) + 0.02)
-      gain.gain.exponentialRampToValueAtTime(0.0001, (start as number) + 0.16)
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.0001, start)
+      gain.gain.exponentialRampToValueAtTime(0.32, start + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur)
       osc.connect(gain)
       gain.connect(ctx.destination)
-      osc.start(start as number)
-      osc.stop((start as number) + 0.18)
+      osc.start(start)
+      osc.stop(start + dur + 0.02)
     })
   } catch (e) {
     console.error('[notif] no se pudo reproducir el sonido:', e)

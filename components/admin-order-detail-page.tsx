@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, PackageX, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { notifyUser, ORDER_STATUS_NOTIF } from '@/lib/notify'
 import { toast } from 'sonner'
 
 const statusConfig = {
@@ -52,6 +54,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [cambioDialog, setCambioDialog] = useState(false)
+  const [editDialog, setEditDialog] = useState(false)
+  const [editNote, setEditNote] = useState('')
+  const [enablingEdit, setEnablingEdit] = useState(false)
   const channelRef = useRef<any>(null)
   const subscribedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
@@ -101,20 +106,15 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       const label = statusConfig[newStatus as keyof typeof statusConfig]?.label
       toast.success(`Pedido actualizado: ${label}`)
 
-      // Notificar al cliente cuando el pedido está listo
-      if (newStatus === 'ready' && order.profile?.id) {
-        try {
-          await fetch('/api/push/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: order.profile.id,
-              title: '🛒 Tu pedido está listo',
-              body: `Pedido #${order.id.slice(0, 8)} — Podés venir a retirarlo`,
-              url: `/dashboard/pedidos/${order.id}`
-            })
-          })
-        } catch {}
+      // Avisar al cliente en cada movimiento del pedido (no solo "listo")
+      const notif = ORDER_STATUS_NOTIF[newStatus]
+      if (notif && order.profile?.id) {
+        notifyUser({
+          userId: order.profile.id,
+          title: notif.title,
+          body: notif.body(order.id),
+          url: `/dashboard/pedidos/${order.id}`,
+        })
       }
     }
     setUpdating(false)
@@ -139,6 +139,49 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     }
   }
 
+  // Le da acceso al cliente para que edite su propio pedido (por ejemplo,
+  // cuando falta un producto). El cliente va a poder sacar renglones o
+  // bajar cantidades desde su pantalla, y el total se recalcula solo.
+  const enableEdit = async () => {
+    setEnablingEdit(true)
+    const { error } = await supabase
+      .from('orders')
+      .update({ edit_unlocked: true, edit_note: editNote.trim() || null })
+      .eq('id', order.id)
+
+    if (error) {
+      toast.error('No se pudo habilitar la edición. Puede que falte crear la columna en la base (ver instrucciones).')
+    } else {
+      setOrder((prev: any) => ({ ...prev, edit_unlocked: true, edit_note: editNote.trim() || null }))
+      toast.success('Le avisamos al cliente que puede editar su pedido')
+      if (order.profile?.id) {
+        notifyUser({
+          userId: order.profile.id,
+          title: '✏️ Podés modificar tu pedido',
+          body: editNote.trim()
+            ? `Nos falta "${editNote.trim()}". Podés sacarlo o ajustar tu pedido.`
+            : 'Hay que ajustar algo de tu pedido. Podés editarlo vos mismo.',
+          url: `/dashboard/pedidos/${order.id}`,
+        })
+      }
+      setEditDialog(false)
+      setEditNote('')
+    }
+    setEnablingEdit(false)
+  }
+
+  // Por si el admin se arrepiente antes de que el cliente llegue a tocarlo.
+  const revokeEdit = async () => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ edit_unlocked: false })
+      .eq('id', order.id)
+    if (!error) {
+      setOrder((prev: any) => ({ ...prev, edit_unlocked: false }))
+      toast.success('Se canceló el permiso de edición')
+    }
+  }
+
   const cancelOrder = async () => {
     if (!confirm('¿Cancelar este pedido?')) return
     setUpdating(true)
@@ -146,8 +189,20 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       .from('orders')
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', order.id)
-    if (error) toast.error('Error al cancelar')
-    else toast.success('Pedido cancelado')
+    if (error) {
+      toast.error('Error al cancelar')
+    } else {
+      toast.success('Pedido cancelado')
+      const notif = ORDER_STATUS_NOTIF.cancelled
+      if (order.profile?.id) {
+        notifyUser({
+          userId: order.profile.id,
+          title: notif.title,
+          body: notif.body(order.id),
+          url: `/dashboard/pedidos/${order.id}`,
+        })
+      }
+    }
     setUpdating(false)
   }
 
@@ -211,6 +266,38 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <p className="text-sm font-medium text-green-700 dark:text-green-400">{notasCambio}</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Aviso de que el cliente puede editar el pedido en este momento */}
+      {order.edit_unlocked && (
+        <Card className="border-blue-500/40 bg-blue-500/5">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                ✏️ El cliente puede editar este pedido ahora mismo
+              </p>
+              {order.edit_note && (
+                <p className="text-xs text-muted-foreground mt-0.5">Motivo: {order.edit_note}</p>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" className="gap-1 shrink-0" onClick={revokeEdit}>
+              <Undo2 className="h-3.5 w-3.5" />
+              Revocar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Botón para habilitar que el cliente edite su pedido — para cuando falta stock de algo */}
+      {isActive && !order.edit_unlocked && (
+        <Button
+          variant="outline"
+          className="w-full gap-2 border-blue-500/50 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+          onClick={() => setEditDialog(true)}
+        >
+          <PackageX className="h-4 w-4" />
+          Falta un producto — dejar que el cliente edite el pedido
+        </Button>
       )}
 
       {/* Botón vuelto en productos — solo para efectivo */}
@@ -305,6 +392,33 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCambioDialog(false)}>Cancelar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog habilitar edición del pedido */}
+      <Dialog open={editDialog} onOpenChange={setEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dejar editar el pedido al cliente</DialogTitle>
+            <DialogDescription>
+              El cliente va a poder sacar productos o bajar cantidades de este pedido desde su pantalla,
+              y va a ver el nuevo total. Le avisamos con una notificación apenas confirmes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">¿Qué producto falta? (opcional)</label>
+            <Input
+              value={editNote}
+              onChange={(e) => setEditNote(e.target.value)}
+              placeholder="Ej: Tomate perita"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditDialog(false)}>Cancelar</Button>
+            <Button onClick={enableEdit} disabled={enablingEdit}>
+              {enablingEdit ? 'Habilitando...' : 'Habilitar edición'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

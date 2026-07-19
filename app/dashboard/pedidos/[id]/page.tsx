@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { OrderChat } from '@/components/order-chat'
+import { OrderEditor } from '@/components/order-editor'
 
 const statusConfig = {
   pending:   { label: 'Pendiente',          icon: Clock,        variant: 'secondary'   as const },
@@ -82,6 +83,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         if (cfg && payload.new.status !== payload.old?.status) toast.info(`Estado actualizado: ${cfg.label}`)
         if (payload.new.cambio_propuesta && payload.new.cambio_propuesta !== payload.old?.cambio_propuesta) {
           toast.info('💬 El local te propuso un cambio en productos')
+        }
+        if (payload.new.edit_unlocked && !payload.old?.edit_unlocked) {
+          toast.info('✏️ Ahora podés editar tu pedido')
         }
       })
       channel.subscribe()
@@ -297,6 +301,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </CardContent>
       </Card>
+
+      {order.edit_unlocked && isActive && (
+        <OrderEditor
+          orderId={order.id}
+          editNote={order.edit_note}
+          adminId={adminId}
+          items={order.order_items || []}
+          onSaved={(newTotal, remainingItems) => {
+            setOrder((prev: any) => ({
+              ...prev,
+              total: newTotal,
+              edit_unlocked: false,
+              order_items: remainingItems.map((it: any) => ({
+                ...it,
+                subtotal: it.quantity * it.unit_price,
+              })),
+            }))
+          }}
+        />
+      )}
 
       {userId && (
         <OrderChat

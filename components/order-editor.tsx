@@ -26,6 +26,7 @@ interface OrderEditorProps {
   editNote: string | null
   items: EditableItem[]
   adminId: string | null
+  /** Se llama cuando se guarda con éxito, para refrescar el pedido en la pantalla que lo contiene */
   onSaved: (newTotal: number, remainingItems: EditableItem[]) => void
 }
 
