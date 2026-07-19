@@ -60,21 +60,25 @@ export function ReviewsSection() {
     if (!comment.trim()) { toast.error('Escribí tu comentario'); return }
     if (!user) { toast.error('Tenés que iniciar sesión para dejar una reseña'); return }
     setSubmitting(true)
-    const { error } = await supabase.from('reviews').insert({
-      user_id: user.id,
-      author_name: profile?.full_name || user.email,
-      rating,
-      comment: comment.trim(),
-      is_approved: false,
-    })
-    if (error) toast.error('Error al enviar')
-    else {
+    try {
+      const { error } = await supabase.from('reviews').insert({
+        user_id: user.id,
+        author_name: profile?.full_name || user.email,
+        rating,
+        comment: comment.trim(),
+        is_approved: false,
+      })
+      if (error) throw error
       toast.success('¡Gracias! Tu reseña será revisada antes de publicarse')
       setDialogOpen(false)
       setComment('')
       setRating(5)
+    } catch (error) {
+      console.error('Error al enviar reseña:', error)
+      toast.error('Error al enviar la reseña')
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   return (

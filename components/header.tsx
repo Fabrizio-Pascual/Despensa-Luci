@@ -93,8 +93,17 @@ export function Header() {
   }, [supabase])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/'
+    try {
+      // Si signOut tarda más de 3s (problema de red), igual seguimos adelante
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ])
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+    } finally {
+      window.location.href = '/'
+    }
   }
 
   return (
