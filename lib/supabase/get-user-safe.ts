@@ -13,7 +13,18 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * storage de auth) para que la app quede en un estado limpio de
  * "no logueado" en vez de trabarse.
  */
-export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 6000) {
+// Códigos de error que SÍ significan "la sesión está realmente rota"
+// (recién ahí tiene sentido limpiar cookies). Cualquier otra cosa
+// (timeout, red caída, 500 momentáneo de Supabase) NO debe cerrar sesión.
+const INVALID_SESSION_CODES = [
+  'refresh_token_not_found',
+  'refresh_token_already_used',
+  'invalid_grant',
+  'session_not_found',
+  'user_not_found',
+]
+
+export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 8000) {
   try {
     const result = await Promise.race([
       supabase.auth.getUser(),
@@ -23,14 +34,21 @@ export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 6000) {
     ])
 
     if (result.error) {
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+      const code = (result.error as { code?: string }).code
+      if (code && INVALID_SESSION_CODES.includes(code)) {
+        // Esto sí es una sesión rota de verdad: limpiamos.
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+      }
+      // Error transitorio (red, 500, etc.): NO tocamos la sesión,
+      // simplemente devolvemos null para esta llamada puntual.
       return null
     }
 
     return result.data.user
   } catch {
-    // Se colgó o tiró error de red/token inválido: limpiamos localmente
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    // Se colgó por timeout o falló la red: NO es evidencia de que el
+    // token sea inválido. No cerramos sesión, solo devolvemos null
+    // para que esta pantalla no se trabe.
     return null
   }
 }
