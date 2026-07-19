@@ -44,10 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
+    console.log('[auth] AuthProvider montado, suscribiendo a onAuthStateChange')
     let active = true
 
     const loadProfile = async (userId: string) => {
+      console.log('[auth] pidiendo profile de', userId)
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      console.log('[auth] respuesta profile:', { data, error })
       if (error) console.error('[auth] error cargando profile:', error.message, error.code, error.details)
       if (active) setProfile(data)
     }
@@ -58,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // inicial. Si más adelante el token vence, Supabase lo renueva solo
     // y dispara otro evento acá mismo.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
+      console.log('[auth] onAuthStateChange:', _event, 'user:', session?.user?.id ?? null)
       if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) {

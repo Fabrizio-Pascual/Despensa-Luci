@@ -33,6 +33,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
 
   const refreshCart = useCallback(async () => {
+    console.log('[cart] refreshCart, user:', user?.id ?? null)
     try {
       if (!user) { setItems([]); setIsLoading(false); return }
 
@@ -41,6 +42,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select('*, product:products(*)')
         .eq('user_id', user.id)
 
+      console.log('[cart] respuesta cart_items:', data?.length, error)
       if (error) throw error
       setItems(data || [])
     } catch (error) {

@@ -26,8 +26,11 @@ export function Header() {
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
+    console.log('[header] Header montado, arrancando efecto de categorias')
     const loadCategories = async () => {
+      console.log('[header] pidiendo categorias')
       const { data, error } = await supabase.from('categories').select('*').order('display_order')
+      console.log('[header] respuesta categorias:', data?.length, error)
       if (error) console.error('[header] error cargando categorias:', error.message, error.code, error.details)
       setCategories(data || [])
     }
