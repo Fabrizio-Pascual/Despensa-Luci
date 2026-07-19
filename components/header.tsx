@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
 import { useTheme } from 'next-themes'
-import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, Sun, Moon } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, Sun, Moon, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart-context'
 import { CartSheet } from '@/components/cart-sheet'
-import type { Profile } from '@/lib/types'
+import { ProductSearch } from '@/components/product-search'
+import type { Profile, Category } from '@/lib/types'
 
 export function Header() {
   const [user, setUser] = useState<{ email?: string } | null>(null)
@@ -20,9 +21,18 @@ export function Header() {
   const { itemCount } = useCart()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const { data } = await supabase.from('categories').select('*').order('display_order')
+      setCategories(data || [])
+    }
+    loadCategories()
+  }, [supabase])
 
   useEffect(() => {
     const getUser = async () => {
@@ -101,13 +111,27 @@ export function Header() {
           <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Inicio
           </Link>
-          <Link href="/categorias" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Categorias
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none">
+              Categorías <ChevronDown className="h-3.5 w-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto w-56">
+              {categories.map((cat) => (
+                <DropdownMenuItem key={cat.id} asChild>
+                  <Link href={`/categorias/${cat.slug}`} className="cursor-pointer">
+                    {cat.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Búsqueda de productos */}
+          <ProductSearch />
+
           {/* Theme toggle */}
           {mounted && (
             <Button
@@ -198,19 +222,25 @@ export function Header() {
                 <p className="text-xs text-muted-foreground">Tu despensa de barrio</p>
               </div>
               {/* Nav links */}
-              <nav className="p-4 space-y-1">
-                {[
-                  { href: '/', label: 'Inicio', emoji: '🏠' },
-                  { href: '/categorias', label: 'Categorías', emoji: '📦' },
-                ].map((item) => (
+              <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors font-medium"
+                >
+                  <span className="text-xl">🏠</span>
+                  Inicio
+                </Link>
+                <p className="px-4 pt-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categorías</p>
+                {categories.map((cat) => (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    key={cat.id}
+                    href={`/categorias/${cat.slug}`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors font-medium"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors text-sm"
                   >
-                    <span className="text-xl">{item.emoji}</span>
-                    {item.label}
+                    <span className="text-lg">📦</span>
+                    {cat.name}
                   </Link>
                 ))}
               </nav>
