@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AdminMobileNav } from '@/components/admin-mobile-nav'
 import { AdminNotifications } from '@/components/admin-notifications'
@@ -22,6 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: '/admin/ventas', label: 'Ventas', icon: BarChart3 },
     { href: '/admin/deudas', label: 'Deudas', icon: FileText },
     { href: '/admin/clientes', label: 'Clientes', icon: Users },
+    { href: '/admin/reseñas', label: 'Reseñas', icon: Star },
   ]
 
   return (
