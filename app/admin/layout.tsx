@@ -5,6 +5,7 @@ import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, St
 import { createClient } from '@/lib/supabase/server'
 import { AdminMobileNav } from '@/components/admin-mobile-nav'
 import { AdminNotifications } from '@/components/admin-notifications'
+import { PushSubscriber } from '@/components/push-subscribe'
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -27,6 +28,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Pide permiso de notificaciones y suscribe este navegador/celular
+          a push. No renderiza nada visible. */}
+      <PushSubscriber />
       <aside className="hidden md:flex w-64 bg-sidebar border-r border-sidebar-border flex-col shrink-0">
         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2">
