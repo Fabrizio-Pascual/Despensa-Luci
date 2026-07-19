@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafe } from '@/lib/supabase/get-user-safe'
 import { useCart } from '@/components/cart-context'
 import { CartSheet } from '@/components/cart-sheet'
 import { ProductSearch } from '@/components/product-search'
@@ -36,7 +37,7 @@ export function Header() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe(supabase)
       setUser(user)
       if (user) {
         const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -55,40 +56,6 @@ export function Header() {
       }
       setAuthLoading(false)
     })
-    return () => subscription.unsubscribe()
-  }, [supabase])
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        setProfile(profileData)
-      }
-    }
-
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      setUser(session?.user || null)
-      if (session?.user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        setProfile(profileData)
-      } else {
-        setProfile(null)
-      }
-    })
-
     return () => subscription.unsubscribe()
   }, [supabase])
 

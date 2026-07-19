@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { getUserSafe } from '@/lib/supabase/get-user-safe'
 import { toast } from 'sonner'
 
 interface Review {
@@ -34,7 +35,7 @@ export function ReviewsSection() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe(supabase)
       setUser(user)
       if (user) {
         const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
@@ -61,13 +62,19 @@ export function ReviewsSection() {
     if (!user) { toast.error('Tenés que iniciar sesión para dejar una reseña'); return }
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('reviews').insert({
+      const insertPromise = supabase.from('reviews').insert({
         user_id: user.id,
         author_name: profile?.full_name || user.email,
         rating,
         comment: comment.trim(),
         is_approved: false,
       })
+      const { error } = await Promise.race([
+        insertPromise,
+        new Promise<{ error: Error }>((resolve) =>
+          setTimeout(() => resolve({ error: new Error('timeout') }), 10000)
+        ),
+      ])
       if (error) throw error
       toast.success('¡Gracias! Tu reseña será revisada antes de publicarse')
       setDialogOpen(false)
