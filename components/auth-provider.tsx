@@ -43,7 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
 
     const loadProfile = async (userId: string) => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      if (error) console.error('[auth] error cargando profile:', error.message, error.code, error.details)
       if (active) setProfile(data)
     }
 

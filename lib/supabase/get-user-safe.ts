@@ -35,6 +35,7 @@ export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 8000) {
 
     if (result.error) {
       const code = (result.error as { code?: string }).code
+      console.error('[getUserSafe] error de auth.getUser():', result.error.message, code)
       if (code && INVALID_SESSION_CODES.includes(code)) {
         // Esto sí es una sesión rota de verdad: limpiamos.
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
@@ -45,10 +46,11 @@ export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 8000) {
     }
 
     return result.data.user
-  } catch {
+  } catch (e) {
     // Se colgó por timeout o falló la red: NO es evidencia de que el
     // token sea inválido. No cerramos sesión, solo devolvemos null
     // para que esta pantalla no se trabe.
+    console.error('[getUserSafe] timeout o error de red:', e instanceof Error ? e.message : e)
     return null
   }
 }

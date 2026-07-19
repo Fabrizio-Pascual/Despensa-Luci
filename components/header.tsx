@@ -27,7 +27,8 @@ export function Header() {
 
   useEffect(() => {
     const loadCategories = async () => {
-      const { data } = await supabase.from('categories').select('*').order('display_order')
+      const { data, error } = await supabase.from('categories').select('*').order('display_order')
+      if (error) console.error('[header] error cargando categorias:', error.message, error.code, error.details)
       setCategories(data || [])
     }
     loadCategories()
