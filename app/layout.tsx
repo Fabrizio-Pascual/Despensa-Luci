@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
 import { createClient } from '@/lib/supabase/server'
+import { getUserSafe } from '@/lib/supabase/get-user-safe'
 import './globals.css'
 
 const inter = Inter({ 
@@ -42,13 +43,27 @@ export default async function RootLayout({
   // que ya llegaron con la request. Así el cliente nunca arranca "a ciegas":
   // no hay más flash de deslogueado -> logueado -> admin al hacer F5,
   // porque el primer render ya sale con el estado correcto.
+  //
+  // IMPORTANTE: esto corre en CADA navegación (no solo en el F5 inicial),
+  // porque este layout envuelve toda la app. Si Supabase tiene un pico de
+  // lentitud o un error puntual acá y lo dejamos explotar, se rompe la
+  // página ENTERA para esa navegación (categorías, carrito, reseñas, todo
+  // lo que cuelga de este layout) — no solo el login. Por eso usamos
+  // getUserSafe (con timeout) y nunca dejamos que un error acá tire abajo
+  // el resto de la app: en el peor caso, seguimos sin user/profile y el
+  // AuthProvider los termina de resolver del lado del cliente como antes.
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUserSafe(supabase, 4000)
 
   let profile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    profile = data
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      if (error) console.error('[layout] error cargando profile en servidor:', error.message)
+      else profile = data
+    } catch (e) {
+      console.error('[layout] excepción cargando profile en servidor:', e instanceof Error ? e.message : e)
+    }
   }
 
   return (
