@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useRef, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
@@ -57,6 +57,10 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
   // estado "cargando" al cliente: ya arrancamos sabiendo quién sos.
   const [loading, setLoading] = useState(!initialUser)
   const supabase = useMemo(() => createClient(), [])
+  // Para no volver a pedir el perfil si el servidor ya nos dio uno
+  // válido para este mismo usuario justo al montar.
+  const currentProfileIdRef = useRef<string | null>(initialProfile?.id ?? null)
+  const isFirstEventRef = useRef(true)
 
   useEffect(() => {
     console.log('[auth] AuthProvider montado, suscribiendo a onAuthStateChange')
@@ -64,10 +68,31 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
 
     const loadProfile = async (userId: string) => {
       console.log('[auth] pidiendo profile de', userId)
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-      console.log('[auth] respuesta profile:', { data, error })
-      if (error) console.error('[auth] error cargando profile:', error.message, error.code, error.details)
-      if (active) setProfile(data)
+      try {
+        // Esta consulta a veces se queda colgada (ni error ni respuesta),
+        // y si no le ponemos un límite, el resto de la app se queda
+        // esperando para siempre. Con el timeout, en el peor caso nos
+        // quedamos con el perfil que ya teníamos (del servidor, si había)
+        // en vez de trabarnos.
+        const result = await Promise.race([
+          supabase.from('profiles').select('*').eq('id', userId).single(),
+          new Promise<{ data: null; error: Error }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: new Error('profile_timeout') }), 6000)
+          ),
+        ])
+        console.log('[auth] respuesta profile:', result)
+        if (result.error) {
+          console.error('[auth] error/timeout cargando profile:', result.error.message)
+          // No pisamos un perfil válido que ya teníamos por un error puntual.
+          return
+        }
+        if (active) {
+          setProfile(result.data)
+          currentProfileIdRef.current = (result.data as Profile | null)?.id ?? null
+        }
+      } catch (e) {
+        console.error('[auth] excepción cargando profile:', e instanceof Error ? e.message : e)
+      }
     }
 
     // onAuthStateChange dispara un evento inicial (INITIAL_SESSION) apenas
@@ -80,10 +105,17 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
       if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) {
-        await loadProfile(session.user.id)
+        // Si esta es la primera confirmación de sesión y el servidor ya
+        // nos había dado el perfil correcto para este mismo usuario, no
+        // lo volvemos a pedir: es una consulta menos compitiendo justo
+        // en el momento más delicado (arranque de página).
+        const canSkip = isFirstEventRef.current && currentProfileIdRef.current === session.user.id
+        if (!canSkip) await loadProfile(session.user.id)
       } else {
         setProfile(null)
+        currentProfileIdRef.current = null
       }
+      isFirstEventRef.current = false
       setLoading(false)
     })
 
