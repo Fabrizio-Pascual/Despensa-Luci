@@ -123,7 +123,7 @@ export default function AdminProductsPage() {
   const handleDeleteAll = async () => {
     setIsDeletingAll(true)
     try {
-      const { error } = await supabase.from('products').delete().neq('id', 'null')
+      const { error } = await supabase.from('products').delete().not('id', 'is', null)
       if (error) throw error
       toast.success(`Todos los productos fueron eliminados`)
       setIsDeleteAllDialogOpen(false)
