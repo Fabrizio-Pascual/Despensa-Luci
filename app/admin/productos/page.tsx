@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
-import { Plus, Pencil, Trash2, Package, Search, FileSpreadsheet, Layers } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Search, FileSpreadsheet, Layers, Trash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -34,9 +34,11 @@ export default function AdminProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false) // NUEVO
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false) // NUEVO
   const [variantsProduct, setVariantsProduct] = useState<Product | null>(null)
 
   const [name, setName] = useState('')
@@ -117,6 +119,22 @@ export default function AdminProductsPage() {
     } catch { toast.error('Error al eliminar') }
   }
 
+  // NUEVO: Función para borrar TODOS los productos
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true)
+    try {
+      const { error } = await supabase.from('products').delete().neq('id', 'null')
+      if (error) throw error
+      toast.success(`Todos los productos fueron eliminados`)
+      setIsDeleteAllDialogOpen(false)
+      loadData()
+    } catch (error) {
+      toast.error('Error al eliminar productos')
+    } finally {
+      setIsDeletingAll(false)
+    }
+  }
+
   if (isLoading) return (
     <div className="flex items-center justify-center py-16">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -128,11 +146,22 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Productos</h1>
-          <p className="text-muted-foreground">Gestioná el catálogo de productos</p>
+          <p className="text-muted-foreground">Gestioná el catálogo de productos ({products.length})</p>
         </div>
         <div className="flex gap-2">
+          {/* NUEVO: Botón Borrar todo */}
+          {products.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteAllDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash className="h-4 w-4" />
+              Borrar todo
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />Importar Excel
+            <FileSpreadsheet className="h-4 w-4 mr-2" />Importar/Actualizar Excel
           </Button>
           <Button onClick={() => { resetForm(); setIsDialogOpen(true) }}>
             <Plus className="h-4 w-4 mr-2" />Nuevo producto
@@ -158,6 +187,7 @@ export default function AdminProductsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead> {/* NUEVO: Columna de numeración */}
               <TableHead>Producto</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead>Precio</TableHead>
@@ -168,9 +198,10 @@ export default function AdminProductsPage() {
           </TableHeader>
           <TableBody>
             {filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay productos</TableCell></TableRow>
-            ) : filteredProducts.map((product) => (
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay productos</TableCell></TableRow>
+            ) : filteredProducts.map((product, index) => (
               <TableRow key={product.id}>
+                <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell> {/* NUEVO: Mostrar número */}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -304,7 +335,7 @@ export default function AdminProductsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete dialog */}
+      {/* Delete dialog individual */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -314,6 +345,28 @@ export default function AdminProductsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* NUEVO: Delete all dialog */}
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Borrar TODOS los productos</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 mt-4">
+              <p>¿Seguro que querés eliminar los {products.length} productos?</p>
+              <div className="bg-destructive/10 border border-destructive/30 rounded p-3 text-sm">
+                <p className="font-semibold text-destructive mb-1">⚠️ Esta acción NO se puede deshacer</p>
+                <p className="text-destructive/80">Se borrarán todos los productos de la base de datos.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAll} disabled={isDeletingAll} className="bg-destructive text-destructive-foreground">
+              {isDeletingAll ? 'Borrando...' : 'Sí, borrar TODOS'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
