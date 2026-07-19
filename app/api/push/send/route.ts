@@ -50,7 +50,13 @@ export async function POST(req: Request) {
       process.env.VAPID_PRIVATE_KEY!
     )
 
-    const payload = JSON.stringify({ title, body, url: url || '/' })
+    const payload = JSON.stringify({ 
+      title, 
+      body, 
+      url: url || '/',
+      tag: 'notification',
+      vibrate: [200, 100, 200],
+    })
 
     const results = await Promise.allSettled(
       subs.map(({ subscription }) => webpush.sendNotification(subscription as any, payload))
