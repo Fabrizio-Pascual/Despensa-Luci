@@ -27,12 +27,16 @@ export function ReviewsSection() {
   const [comment, setComment] = useState('')
   const [hoverRating, setHoverRating] = useState(0)
   const [submitting, setSubmitting] = useState(false)
-  const { user, profile } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const supabase = useMemo(() => createClient(), [])
 
   const SHOWN = 3
 
   useEffect(() => {
+    // Igual que en el header: esperamos a que la sesión esté resuelta
+    // antes de pedir las reseñas, para no quedarnos pegados con una
+    // respuesta pedida en el momento equivocado (justo al recargar).
+    if (authLoading) return
     const load = async () => {
       const { data, count } = await supabase
         .from('reviews')
@@ -45,7 +49,7 @@ export function ReviewsSection() {
       setTotal(count || 0)
     }
     load()
-  }, [supabase])
+  }, [supabase, authLoading])
 
   const displayed = showAll ? reviews : reviews.slice(0, SHOWN)
 

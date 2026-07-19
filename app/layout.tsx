@@ -3,6 +3,7 @@ import { Playfair_Display, Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
+import { createClient } from '@/lib/supabase/server'
 import './globals.css'
 
 const inter = Inter({ 
@@ -32,11 +33,24 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Resolvemos quién está logueado ACÁ, en el servidor, usando las cookies
+  // que ya llegaron con la request. Así el cliente nunca arranca "a ciegas":
+  // no hay más flash de deslogueado -> logueado -> admin al hacer F5,
+  // porque el primer render ya sale con el estado correcto.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let profile = null
+  if (user) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    profile = data
+  }
+
   return (
     <html lang="es" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen bg-background">
@@ -46,7 +60,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
+          <AuthProvider
+            initialUser={user ? { id: user.id, email: user.email ?? undefined } : null}
+            initialProfile={profile}
+          >
             {children}
             <div id="portal-root" />
             <Toaster position="top-center" richColors closeButton duration={3000} />

@@ -26,6 +26,11 @@ export function Header() {
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
+    // Esperamos a que el AuthProvider termine de resolver la sesión antes
+    // de pedir las categorías: si esta consulta sale mientras la sesión
+    // todavía se está confirmando, corre el riesgo de pedirse una sola vez
+    // con el estado equivocado y quedarse así (no hay reintento).
+    if (authLoading) return
     console.log('[header] Header montado, arrancando efecto de categorias')
     const loadCategories = async () => {
       console.log('[header] pidiendo categorias')
@@ -35,7 +40,7 @@ export function Header() {
       setCategories(data || [])
     }
     loadCategories()
-  }, [supabase])
+  }, [supabase, authLoading])
 
   const handleSignOut = async () => {
     try {

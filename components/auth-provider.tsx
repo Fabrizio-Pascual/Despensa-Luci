@@ -22,6 +22,19 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 })
 
+interface AuthProviderProps {
+  children: ReactNode
+  /**
+   * Usuario y perfil ya resueltos en el servidor (ver app/layout.tsx),
+   * usando las cookies de la request. Esto es lo que evita el "flash"
+   * de logueado -> no logueado -> admin que se veía al hacer F5: en vez
+   * de que el cliente arranque en null y tenga que redescubrir la sesión
+   * de a poco, arranca ya sabiendo quién sos desde el primer render.
+   */
+  initialUser?: AuthUser | null
+  initialProfile?: Profile | null
+}
+
 /**
  * Única fuente de verdad para "¿quién está logueado?".
  *
@@ -37,10 +50,12 @@ const AuthContext = createContext<AuthContextType>({
  * guardada localmente (instantáneo, sin depender de la red) y dejamos
  * que Supabase la revalide en segundo plano cuando haga falta.
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+export function AuthProvider({ children, initialUser = null, initialProfile = null }: AuthProviderProps) {
+  const [user, setUser] = useState<AuthUser | null>(initialUser)
+  const [profile, setProfile] = useState<Profile | null>(initialProfile)
+  // Si el servidor ya nos dio el usuario, no hace falta mostrar el
+  // estado "cargando" al cliente: ya arrancamos sabiendo quién sos.
+  const [loading, setLoading] = useState(!initialUser)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
