@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { OrderChat } from '@/components/order-chat'
 
 const statusConfig = {
   pending:   { label: 'Pendiente',          icon: Clock,        variant: 'secondary'   as const },
@@ -50,6 +51,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [cambioItem, setCambioItem] = useState('')
   const [cambioMonto, setCambioMonto] = useState('')
   const [sendingCambio, setSendingCambio] = useState(false)
+  const [adminId, setAdminId] = useState<string | null>(null)
   const channelRef = useRef<any>(null)
   const subscribedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
@@ -57,6 +59,8 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   useEffect(() => {
     const load = async () => {
       const { id } = await params
+      const { data: { user } } = await supabase.auth.getUser()
+      setAdminId(user?.id || null)
       const { data } = await supabase
         .from('orders')
         .select('*, profile:profiles(*), order_items(*, product:products(name, price, image_url))')
@@ -325,6 +329,15 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           <XCircle className="mr-2 h-4 w-4" />
           Cancelar pedido
         </Button>
+      )}
+
+      {order.profile?.id && (
+        <OrderChat
+          orderId={order.id}
+          currentUserId={adminId || ''}
+          isAdmin
+          notifyUserId={order.profile.id}
+        />
       )}
 
       {/* Dialog con input libre para producto y monto */}

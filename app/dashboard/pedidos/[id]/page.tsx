@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { OrderChat } from '@/components/order-chat'
 
 const statusConfig = {
   pending:   { label: 'Pendiente',          icon: Clock,        variant: 'secondary'   as const },
@@ -43,6 +44,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [cancelDialog, setCancelDialog] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [respondiendo, setRespondiendo] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [adminId, setAdminId] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -52,6 +55,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     const load = async () => {
       const { id } = await params
       const { data: { user } } = await supabase.auth.getUser()
+      setUserId(user?.id || null)
+
+      const { data: adminProfile } = await supabase
+        .from('profiles').select('id').eq('is_admin', true).limit(1).maybeSingle()
+      setAdminId(adminProfile?.id || null)
 
       const { data } = await supabase
         .from('orders')
@@ -289,6 +297,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </CardContent>
       </Card>
+
+      {userId && (
+        <OrderChat
+          orderId={order.id}
+          currentUserId={userId}
+          isAdmin={false}
+          notifyUserId={adminId}
+        />
+      )}
 
       {canCancel && (
         <Button variant="destructive" className="w-full" onClick={() => setCancelDialog(true)}>

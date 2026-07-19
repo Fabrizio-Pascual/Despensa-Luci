@@ -208,13 +208,13 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] p-0">
+            <SheetContent side="right" className="w-[280px] p-0 flex flex-col h-full">
               <SheetHeader className="sr-only">
                 <SheetTitle>Menú de navegación</SheetTitle>
                 <SheetDescription>Navegación principal de Despensa Luci</SheetDescription>
               </SheetHeader>
               {/* Header del menu */}
-              <div className="p-6 border-b bg-primary/5">
+              <div className="p-6 border-b bg-primary/5 shrink-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Store className="h-6 w-6 text-primary" />
                   <span className="font-bold text-lg">Despensa Luci</span>
@@ -222,7 +222,7 @@ export function Header() {
                 <p className="text-xs text-muted-foreground">Tu despensa de barrio</p>
               </div>
               {/* Nav links */}
-              <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
+              <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
@@ -246,7 +246,7 @@ export function Header() {
               </nav>
               {/* Footer del menu */}
               {!user && !authLoading && (
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t space-y-2">
+                <div className="shrink-0 p-4 border-t space-y-2 bg-card">
                   <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full">Ingresar</Button>
                   </Link>
@@ -256,7 +256,7 @@ export function Header() {
                 </div>
               )}
               {user && (
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+                <div className="shrink-0 p-4 border-t bg-card">
                   <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 mb-2">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <User className="h-4 w-4 text-primary" />
