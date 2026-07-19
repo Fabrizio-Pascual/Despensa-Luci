@@ -56,10 +56,21 @@ export default function AdminProductsPage() {
     const { data: categoriesData } = await supabase.from('categories').select('*').order('display_order')
     setCategories(categoriesData || [])
 
-    let query = supabase.from('products').select('*, category:categories(*)').order('name')
-    if (filterCategory !== 'all') query = query.eq('category_id', filterCategory)
-    const { data: productsData } = await query
-    setProducts(productsData || [])
+    // Supabase/PostgREST limita cada consulta a 1000 filas por defecto.
+    // Traemos en tandas de 1000 hasta que no queden más, para no perder productos.
+    const PAGE_SIZE = 1000
+    let allProducts: any[] = []
+    let from = 0
+    while (true) {
+      let query = supabase.from('products').select('*, category:categories(*)').order('name').range(from, from + PAGE_SIZE - 1)
+      if (filterCategory !== 'all') query = query.eq('category_id', filterCategory)
+      const { data: pageData } = await query
+      if (!pageData || pageData.length === 0) break
+      allProducts = allProducts.concat(pageData)
+      if (pageData.length < PAGE_SIZE) break
+      from += PAGE_SIZE
+    }
+    setProducts(allProducts)
     setIsLoading(false)
   }, [supabase, filterCategory])
 

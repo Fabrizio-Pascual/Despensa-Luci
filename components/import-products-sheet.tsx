@@ -104,8 +104,10 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
     let updatedCount = 0
     const errors: string[] = []
 
-    try {
-      for (const r of validRows) {
+    // NUEVO: cada fila corre en su propio try/catch, así una fila que falle
+    // (error de red, excepción inesperada, etc.) no corta la importación entera.
+    for (const r of validRows) {
+      try {
         const productData = {
           name: r.nombre,
           category_id: categoryMap[r.categoria.toLowerCase()],
@@ -117,7 +119,7 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
           is_active: true,
         }
 
-        // NUEVO: Si tiene ID, intentar actualizar primero (UPSERT)
+        // Si tiene ID, intentar actualizar primero (UPSERT)
         if (r.id) {
           const { error: updateError } = await supabase
             .from('products')
@@ -125,7 +127,7 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
             .eq('id', r.id)
 
           if (updateError) {
-            errors.push(`${r.nombre}: No se pudo actualizar`)
+            errors.push(`${r.nombre}: No se pudo actualizar (${updateError.message})`)
           } else {
             updatedCount++
           }
@@ -136,32 +138,32 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
             .insert([productData])
 
           if (insertError) {
-            errors.push(`${r.nombre}: No se pudo crear`)
+            errors.push(`${r.nombre}: No se pudo crear (${insertError.message})`)
           } else {
             createdCount++
           }
         }
+      } catch (rowError: any) {
+        // Excepción inesperada en esta fila puntual: la registramos y seguimos
+        errors.push(`${r.nombre}: excepción (${rowError?.message || 'desconocida'})`)
       }
-
-      setImportStats({ created: createdCount, updated: updatedCount })
-
-      if (errors.length === 0) {
-        const message = `✅ ${createdCount} nuevo(s) producto(s), ${updatedCount} actualizado(s)`
-        toast.success(message)
-      } else {
-        toast.warning(
-          `✅ ${createdCount} + ${updatedCount} OK | ⚠️ ${errors.length} con error`
-        )
-      }
-
-      setImported(true)
-      onImported()
-    } catch (error) {
-      toast.error('Error durante la importación')
-      console.error(error)
-    } finally {
-      setIsImporting(false)
     }
+
+    setImportStats({ created: createdCount, updated: updatedCount })
+
+    if (errors.length === 0) {
+      const message = `✅ ${createdCount} nuevo(s) producto(s), ${updatedCount} actualizado(s)`
+      toast.success(message)
+    } else {
+      toast.warning(
+        `✅ ${createdCount} + ${updatedCount} OK | ⚠️ ${errors.length} con error`
+      )
+      console.warn('Errores de importación:', errors)
+    }
+
+    setImported(true)
+    onImported()
+    setIsImporting(false)
   }
 
   const handleClose = () => {
