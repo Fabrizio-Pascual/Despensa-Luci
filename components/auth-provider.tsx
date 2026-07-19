@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getUserSafe } from '@/lib/supabase/get-user-safe'
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
 
 interface AuthUser {
@@ -30,8 +30,12 @@ const AuthContext = createContext<AuthContextType>({
  * Esas consultas simultáneas podían chocar entre sí y hacer que
  * Supabase invalidara la sesión.
  *
- * Ahora esto se pregunta UNA sola vez acá arriba, y el resto de la
- * app simplemente lee el resultado con el hook useAuth().
+ * Antes, además, esperábamos a auth.getUser() para saber quién sos:
+ * esa llamada siempre sale a internet a confirmar el token con Supabase,
+ * y si la red tiene un pico de lentitud, se cuelga y la app se queda sin
+ * saber quién sos. Ahora usamos la sesión que el navegador ya tiene
+ * guardada localmente (instantáneo, sin depender de la red) y dejamos
+ * que Supabase la revalide en segundo plano cuando haga falta.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -48,16 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active) setProfile(data)
     }
 
-    const init = async () => {
-      const u = await getUserSafe(supabase)
-      if (!active) return
-      setUser(u)
-      if (u) await loadProfile(u.id)
-      if (active) setLoading(false)
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // onAuthStateChange dispara un evento inicial (INITIAL_SESSION) apenas
+    // nos suscribimos, usando la sesión ya guardada en el navegador —
+    // no hace falta pedirle nada a Supabase por red para saber el estado
+    // inicial. Si más adelante el token vence, Supabase lo renueva solo
+    // y dispara otro evento acá mismo.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) {
