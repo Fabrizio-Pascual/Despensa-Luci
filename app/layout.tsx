@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Playfair_Display, Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
+import { AuthProvider } from '@/components/auth-provider'
 import './globals.css'
 
 const inter = Inter({ 
@@ -45,9 +46,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <div id="portal-root" />
-          <Toaster position="top-center" richColors closeButton duration={3000} />
+          <AuthProvider>
+            {children}
+            <div id="portal-root" />
+            <Toaster position="top-center" richColors closeButton duration={3000} />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

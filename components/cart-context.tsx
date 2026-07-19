@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getUserSafe } from '@/lib/supabase/get-user-safe'
+import { useAuth } from '@/components/auth-provider'
 import type { CartItem, Product } from '@/lib/types'
 import { toast } from 'sonner'
 
@@ -30,10 +30,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItemExtended[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const supabase = useMemo(() => createClient(), [])
+  const { user, loading: authLoading } = useAuth()
 
   const refreshCart = useCallback(async () => {
     try {
-      const user = await getUserSafe(supabase)
       if (!user) { setItems([]); setIsLoading(false); return }
 
       const { data, error } = await supabase
@@ -48,17 +48,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [supabase, user])
 
   useEffect(() => {
+    // Esperamos a que el AuthProvider termine de resolver la sesión
+    // antes de pedir el carrito, para no disparar una consulta de más.
+    if (authLoading) return
     refreshCart()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { refreshCart() })
-    return () => subscription.unsubscribe()
-  }, [supabase, refreshCart])
+  }, [authLoading, refreshCart])
 
   const addToCart = async (productId: string, quantity = 1, variantId: string | null = null, variantName: string | null = null) => {
     try {
-      const user = await getUserSafe(supabase)
       if (!user) { toast.error('Iniciá sesión para agregar productos'); return }
 
       // Buscar si ya existe el mismo producto+variante
@@ -88,7 +88,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = async (productId: string, variantId: string | null = null) => {
     try {
-      const user = await getUserSafe(supabase)
       if (!user) return
 
       let query = supabase.from('cart_items').delete().eq('user_id', user.id).eq('product_id', productId)
@@ -109,7 +108,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = async (productId: string, quantity: number, variantId: string | null = null) => {
     try {
-      const user = await getUserSafe(supabase)
       if (!user) return
 
       if (quantity <= 0) { await removeFromCart(productId, variantId); return }
@@ -135,7 +133,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = async () => {
     try {
-      const user = await getUserSafe(supabase)
       if (!user) return
       const { error } = await supabase.from('cart_items').delete().eq('user_id', user.id)
       if (error) throw error

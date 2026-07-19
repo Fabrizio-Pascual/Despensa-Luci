@@ -8,17 +8,15 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
-import { getUserSafe } from '@/lib/supabase/get-user-safe'
+import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
 import { CartSheet } from '@/components/cart-sheet'
 import { ProductSearch } from '@/components/product-search'
-import type { Profile, Category } from '@/lib/types'
+import type { Category } from '@/lib/types'
 
 export function Header() {
-  const [user, setUser] = useState<{ email?: string } | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { user, profile, loading: authLoading } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [authLoading, setAuthLoading] = useState(true)
   const { itemCount } = useCart()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -33,30 +31,6 @@ export function Header() {
       setCategories(data || [])
     }
     loadCategories()
-  }, [supabase])
-
-  useEffect(() => {
-    const getUser = async () => {
-      const user = await getUserSafe(supabase)
-      setUser(user)
-      if (user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-        setProfile(data)
-      }
-      setAuthLoading(false)
-    }
-    getUser()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      setUser(session?.user || null)
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-        setProfile(data)
-      } else {
-        setProfile(null)
-      }
-      setAuthLoading(false)
-    })
-    return () => subscription.unsubscribe()
   }, [supabase])
 
   const handleSignOut = async () => {

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
-import { getUserSafe } from '@/lib/supabase/get-user-safe'
+import { useAuth } from '@/components/auth-provider'
 import { toast } from 'sonner'
 
 interface Review {
@@ -27,21 +27,13 @@ export function ReviewsSection() {
   const [comment, setComment] = useState('')
   const [hoverRating, setHoverRating] = useState(0)
   const [submitting, setSubmitting] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const { user, profile } = useAuth()
   const supabase = useMemo(() => createClient(), [])
 
   const SHOWN = 3
 
   useEffect(() => {
     const load = async () => {
-      const user = await getUserSafe(supabase)
-      setUser(user)
-      if (user) {
-        const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
-        setProfile(data)
-      }
-
       const { data, count } = await supabase
         .from('reviews')
         .select('*', { count: 'exact' })
