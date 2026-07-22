@@ -117,10 +117,6 @@ export default function AdminOrdersPage() {
         })
       }
 
-      if (newStatus === 'completed' && order) {
-        generateReceipt(order)
-      }
-
       loadOrders()
     } catch (error) {
       console.error('Error updating order:', error)
