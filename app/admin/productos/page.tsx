@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ImportProductsSheet } from '@/components/import-products-sheet'
 import { VariantsSheet } from '@/components/admin-variants-sheet'
@@ -81,6 +82,26 @@ export default function AdminProductsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+  // Agrupamos por categoría para no mostrar todo en una lista gigante.
+  // Si hay búsqueda activa, abrimos todas las categorías con resultados
+  // para que no haya que ir abriendo una por una para encontrar algo.
+  const groupedProducts = useMemo(() => {
+    const groups = new Map<string, { name: string; items: typeof filteredProducts }>()
+    for (const p of filteredProducts) {
+      const key = p.category?.id || 'sin-categoria'
+      const name = p.category?.name || 'Sin categoría'
+      if (!groups.has(key)) groups.set(key, { name, items: [] })
+      groups.get(key)!.items.push(p)
+    }
+    return Array.from(groups.entries())
+      .map(([id, g]) => ({ id, ...g }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [filteredProducts])
+
+  const accordionDefaultValue = searchQuery.trim()
+    ? groupedProducts.map(g => g.id)
+    : undefined
 
   const toggleSelected = (id: string) => {
     setSelectedIds(prev => {
@@ -253,85 +274,101 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
-                  onCheckedChange={toggleSelectAll}
-                  aria-label="Seleccionar todos"
-                />
-              </TableHead>
-              <TableHead className="w-12">#</TableHead> {/* NUEVO: Columna de numeración */}
-              <TableHead>Producto</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Precio</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay productos</TableCell></TableRow>
-            ) : filteredProducts.map((product, index) => (
-              <TableRow key={product.id} data-state={selectedIds.has(product.id) ? 'selected' : undefined}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedIds.has(product.id)}
-                    onCheckedChange={() => toggleSelected(product.id)}
-                    aria-label={`Seleccionar ${product.name}`}
-                  />
-                </TableCell>
-                <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell> {/* NUEVO: Mostrar número */}
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {product.image_url
-                        ? <Image src={product.image_url} alt={product.name} width={40} height={40} className="object-cover" unoptimized />
-                        : <Package className="h-5 w-5 text-muted-foreground" />}
-                    </div>
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.unit}</p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{product.category?.name}</TableCell>
-                <TableCell>{formatPrice(product.price)}</TableCell>
-                <TableCell>
-                  <Badge variant={product.stock > 10 ? 'outline' : product.stock > 0 ? 'secondary' : 'destructive'}>
-                    {product.stock}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                    {product.is_active ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {/* Botón sabores/variantes */}
-                  <Button
-                    variant="ghost" size="icon"
-                    onClick={() => setVariantsProduct(product)}
-                    title="Gestionar sabores/variantes"
-                  >
-                    <Layers className="h-4 w-4 text-primary" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => { setProductToDelete(product); setIsDeleteDialogOpen(true) }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+      {filteredProducts.length === 0 ? (
+        <Card className="py-8 text-center text-muted-foreground">No hay productos</Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={accordionDefaultValue} className="space-y-3">
+          {groupedProducts.map((group) => (
+            <AccordionItem key={group.id} value={group.id} className="border rounded-lg px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline">
+                <span className="flex items-center gap-2">
+                  <span className="font-semibold">{group.name}</span>
+                  <Badge variant="secondary">{group.items.length}</Badge>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={group.items.every(p => selectedIds.has(p.id))}
+                          onCheckedChange={() => {
+                            setSelectedIds(prev => {
+                              const next = new Set(prev)
+                              const allSelected = group.items.every(p => next.has(p.id))
+                              group.items.forEach(p => allSelected ? next.delete(p.id) : next.add(p.id))
+                              return next
+                            })
+                          }}
+                          aria-label={`Seleccionar todos en ${group.name}`}
+                        />
+                      </TableHead>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Precio</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.items.map((product) => (
+                      <TableRow key={product.id} data-state={selectedIds.has(product.id) ? 'selected' : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(product.id)}
+                            onCheckedChange={() => toggleSelected(product.id)}
+                            aria-label={`Seleccionar ${product.name}`}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {product.image_url
+                                ? <Image src={product.image_url} alt={product.name} width={40} height={40} className="object-cover" />
+                                : <Package className="h-5 w-5 text-muted-foreground" />}
+                            </div>
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              <p className="text-xs text-muted-foreground">{product.unit}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatPrice(product.price)}</TableCell>
+                        <TableCell>
+                          <Badge variant={product.stock > 10 ? 'outline' : product.stock > 0 ? 'secondary' : 'destructive'}>
+                            {product.stock}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                            {product.is_active ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost" size="icon"
+                            onClick={() => setVariantsProduct(product)}
+                            title="Gestionar sabores/variantes"
+                          >
+                            <Layers className="h-4 w-4 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setProductToDelete(product); setIsDeleteDialogOpen(true) }}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
 
       {/* Dialog crear/editar producto */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm() }}>
