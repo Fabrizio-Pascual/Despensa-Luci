@@ -12,13 +12,19 @@ async function notifyTelegram(text: string) {
   const chatId = process.env.TELEGRAM_CHAT_ID
   if (!token || !chatId) return
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
     })
+    // fetch no tira error si Telegram responde con un error (token o
+    // chat_id inválido, etc.) - hay que revisar el body para enterarse.
+    if (!res.ok) {
+      const body = await res.text()
+      console.error('[notify-new-order] telegram rechazó el mensaje:', res.status, body)
+    }
   } catch (e) {
-    console.error('[notify-new-order] telegram falló:', e)
+    console.error('[notify-new-order] telegram falló (red):', e)
   }
 }
 
@@ -51,7 +57,7 @@ export async function POST(req: Request) {
     // Aviso por Telegram (gratis, no depende de que el navegador esté
     // abierto ni de permisos de notificaciones, ni de que haya push
     // configurado). Se dispara siempre, apenas entra el pedido.
-    notifyTelegram(`🛒 <b>Nuevo pedido</b>${total ? ' por ' + total : ''}\n${orderUrl}`)
+    await notifyTelegram(`🛒 <b>Nuevo pedido</b>${total ? ' por ' + total : ''}\n${orderUrl}`)
 
     // Client con la Service Role: esto corre en el servidor, no en el
     // navegador, así que puede saltarse RLS para leer todos los admins
