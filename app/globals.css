@@ -148,7 +148,10 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-foreground: var(--warning-foreground);
+
 }
+
 
 @layer base {
   * { @apply border-border outline-ring/50; }
@@ -215,10 +218,16 @@ body {
 
 /* Glass effect utility — para navbar, cards flotantes, badges */
 .glass {
-  background: color-mix(in oklch, var(--card) 72%, transparent);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid color-mix(in oklch, var(--border) 90%, transparent);
+  box-shadow: 0 2px 12px oklch(0.16 0.02 250 / 0.10);
+}
+.dark .glass {
+  background: color-mix(in oklch, var(--card) 72%, transparent);
   border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  box-shadow: none;
 }
 
 /* Gradiente de texto para títulos destacados */

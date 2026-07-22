@@ -26,6 +26,7 @@ export function Footer() {
               <Link href="/" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Inicio</Link>
               <Link href="/categorias" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Categorías</Link>
               <Link href="/dashboard" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Mis pedidos</Link>
+              <Link href="/como-comprar" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Cómo comprar (guía)</Link>
             </div>
           </div>
 

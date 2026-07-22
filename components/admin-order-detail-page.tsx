@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, PackageX, Undo2 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, PackageX, Undo2, Pencil, Minus, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,6 +57,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [editDialog, setEditDialog] = useState(false)
   const [editNote, setEditNote] = useState('')
   const [enablingEdit, setEnablingEdit] = useState(false)
+  const [adminEditDialog, setAdminEditDialog] = useState(false)
+  const [adminEditItems, setAdminEditItems] = useState<any[]>([])
+  const [savingAdminEdit, setSavingAdminEdit] = useState(false)
   const channelRef = useRef<any>(null)
   const subscribedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
@@ -182,6 +185,60 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     }
   }
 
+  // Edición directa del admin sobre el pedido (ej: el cliente se arrepintió de algo).
+  // A diferencia de "habilitar edición", esto lo hace el admin ahí mismo, sin pasar por el cliente.
+  const openAdminEdit = () => {
+    setAdminEditItems(order.order_items?.map((it: any) => ({ ...it })) || [])
+    setAdminEditDialog(true)
+  }
+
+  const changeAdminQty = (itemId: string, delta: number) => {
+    setAdminEditItems(prev => prev.map(it => it.id === itemId ? { ...it, quantity: Math.max(0, it.quantity + delta) } : it))
+  }
+
+  const adminEditTotal = adminEditItems.filter(it => it.quantity > 0).reduce((sum, it) => sum + it.quantity * it.unit_price, 0)
+
+  const saveAdminEdit = async () => {
+    const remaining = adminEditItems.filter(it => it.quantity > 0)
+    if (remaining.length === 0) { toast.error('No podés dejar el pedido vacío. Mejor cancelalo.'); return }
+    setSavingAdminEdit(true)
+    try {
+      const toDelete = adminEditItems.filter(it => it.quantity === 0)
+      const toUpdate = remaining.filter(it => {
+        const original = order.order_items.find((o: any) => o.id === it.id)
+        return original && original.quantity !== it.quantity
+      })
+      for (const it of toDelete) {
+        const { error } = await supabase.from('order_items').delete().eq('id', it.id)
+        if (error) throw error
+      }
+      for (const it of toUpdate) {
+        const { error } = await supabase.from('order_items').update({ quantity: it.quantity, subtotal: it.quantity * it.unit_price }).eq('id', it.id)
+        if (error) throw error
+      }
+      const { error: orderError } = await supabase.from('orders').update({ total: adminEditTotal }).eq('id', order.id)
+      if (orderError) throw orderError
+
+      setOrder((prev: any) => ({ ...prev, total: adminEditTotal, order_items: remaining }))
+      toast.success('Pedido actualizado')
+
+      if (order.profile?.id) {
+        notifyUser({
+          userId: order.profile.id,
+          title: '✏️ Actualizamos tu pedido',
+          body: `Ajustamos tu pedido #${order.id.slice(0, 8)} — nuevo total: ${formatPrice(adminEditTotal)}`,
+          url: `/dashboard/pedidos/${order.id}`,
+        })
+      }
+      setAdminEditDialog(false)
+    } catch (err) {
+      console.error(err)
+      toast.error('No se pudo guardar el cambio')
+    } finally {
+      setSavingAdminEdit(false)
+    }
+  }
+
   const cancelOrder = async () => {
     if (!confirm('¿Cancelar este pedido?')) return
     setUpdating(true)
@@ -261,9 +318,11 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 
       {/* Info de pago efectivo */}
       {isEfectivo && notasCambio && (
-        <Card className="border-green-500/30 bg-green-500/5">
+        <Card className={notasCambio.includes('VUELTO ALTO') ? 'border-amber-500/40 bg-amber-500/10' : 'border-green-500/30 bg-green-500/5'}>
           <CardContent className="p-4">
-            <p className="text-sm font-medium text-green-700 dark:text-green-400">{notasCambio}</p>
+            <p className={`text-sm font-medium ${notasCambio.includes('VUELTO ALTO') ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+              {notasCambio}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -322,7 +381,15 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 
       {/* Productos */}
       <Card>
-        <CardHeader><CardTitle>Productos del pedido</CardTitle></CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>Productos del pedido</CardTitle>
+          {isActive && (
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={openAdminEdit}>
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
+          )}
+        </CardHeader>
         <CardContent className="space-y-3">
           {order.order_items?.map((item: any) => (
             <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
@@ -418,6 +485,50 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <Button variant="outline" onClick={() => setEditDialog(false)}>Cancelar</Button>
             <Button onClick={enableEdit} disabled={enablingEdit}>
               {enablingEdit ? 'Habilitando...' : 'Habilitar edición'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Dialog editar pedido directamente (admin) — por si el cliente se arrepiente de algo */}
+      <Dialog open={adminEditDialog} onOpenChange={setAdminEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar productos del pedido</DialogTitle>
+            <DialogDescription>
+              Ajustá cantidades o sacá productos si el cliente se arrepintió de algo. Se guarda al instante y se le avisa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-[50vh] overflow-y-auto">
+            {adminEditItems.map((it) => (
+              <div key={it.id} className={`flex items-center justify-between gap-2 ${it.quantity === 0 ? 'opacity-40' : ''}`}>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{it.product?.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatPrice(it.unit_price)} c/u</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeAdminQty(it.id, -1)} disabled={it.quantity === 0}>
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="w-6 text-center font-medium">{it.quantity}</span>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeAdminQty(it.id, 1)}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setAdminEditItems(prev => prev.map(p => p.id === it.id ? { ...p, quantity: 0 } : p))}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Separator />
+          <div className="flex justify-between items-center font-semibold py-1">
+            <span>Nuevo total</span>
+            <span className="text-lg text-primary">{formatPrice(adminEditTotal)}</span>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setAdminEditDialog(false)}>Cancelar</Button>
+            <Button onClick={saveAdminEdit} disabled={savingAdminEdit}>
+              {savingAdminEdit ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           </DialogFooter>
         </DialogContent>

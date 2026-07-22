@@ -28,9 +28,14 @@ interface OrderEditorProps {
   adminId: string | null
   /** Se llama cuando se guarda con éxito, para refrescar el pedido en la pantalla que lo contiene */
   onSaved: (newTotal: number, remainingItems: EditableItem[]) => void
+  /** true cuando lo abre el admin desde el panel, no el cliente */
+  isAdmin?: boolean
+  /** id del cliente, para avisarle cuando el admin modifica el pedido */
+  customerId?: string | null
+  onCancel?: () => void
 }
 
-export function OrderEditor({ orderId, editNote, items: initialItems, adminId, onSaved }: OrderEditorProps) {
+export function OrderEditor({ orderId, editNote, items: initialItems, adminId, onSaved, isAdmin, customerId, onCancel }: OrderEditorProps) {
   const [items, setItems] = useState<EditableItem[]>(initialItems)
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
@@ -75,13 +80,24 @@ export function OrderEditor({ orderId, editNote, items: initialItems, adminId, o
 
       const { error: orderError } = await supabase
         .from('orders')
-        .update({ total: newTotal, edit_unlocked: false, edited_by_customer_at: new Date().toISOString() })
+        .update(
+          isAdmin
+            ? { total: newTotal }
+            : { total: newTotal, edit_unlocked: false, edited_by_customer_at: new Date().toISOString() }
+        )
         .eq('id', orderId)
       if (orderError) throw orderError
 
-      toast.success('Guardamos los cambios en tu pedido')
+      toast.success(isAdmin ? 'Cambios guardados en el pedido' : 'Guardamos los cambios en tu pedido')
 
-      if (adminId) {
+      if (isAdmin && customerId) {
+        notifyUser({
+          userId: customerId,
+          title: '✏️ Modificamos tu pedido',
+          body: `Pedido #${orderId.slice(0, 8)} — nuevo total: ${formatPrice(newTotal)}`,
+          url: `/dashboard/pedidos/${orderId}`,
+        })
+      } else if (!isAdmin && adminId) {
         notifyUser({
           userId: adminId,
           title: '✏️ El cliente modificó su pedido',
@@ -104,7 +120,7 @@ export function OrderEditor({ orderId, editNote, items: initialItems, adminId, o
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base text-blue-700 dark:text-blue-400">
           <Pencil className="h-4 w-4" />
-          Podés editar tu pedido
+          {isAdmin ? 'Editar pedido' : 'Podés editar tu pedido'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -144,9 +160,14 @@ export function OrderEditor({ orderId, editNote, items: initialItems, adminId, o
           <span className="text-lg text-primary">{formatPrice(newTotal)}</span>
         </div>
 
-        <Button className="w-full" onClick={save} disabled={saving}>
-          {saving ? 'Guardando...' : 'Confirmar cambios'}
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && onCancel && (
+            <Button variant="outline" className="flex-1" onClick={onCancel} disabled={saving}>Cancelar</Button>
+          )}
+          <Button className="flex-1" onClick={save} disabled={saving}>
+            {saving ? 'Guardando...' : 'Confirmar cambios'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

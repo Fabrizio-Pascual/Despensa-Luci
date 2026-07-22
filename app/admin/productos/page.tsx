@@ -120,6 +120,13 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleToggleActive = async (product: Product) => {
+    const { error } = await supabase.from('products').update({ is_active: !product.is_active }).eq('id', product.id)
+    if (error) { toast.error('Error al cambiar el estado'); return }
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p))
+    toast.success(!product.is_active ? 'Producto activado' : 'Producto desactivado (no se muestra a los clientes)')
+  }
+
   const handleDelete = async () => {
     if (!productToDelete) return
     try {
@@ -234,9 +241,16 @@ export default function AdminProductsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                    {product.is_active ? 'Activo' : 'Inactivo'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={product.is_active}
+                      onCheckedChange={() => handleToggleActive(product)}
+                      title={product.is_active ? 'Desactivar producto' : 'Activar producto'}
+                    />
+                    <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                      {product.is_active ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   {/* Botón sabores/variantes */}

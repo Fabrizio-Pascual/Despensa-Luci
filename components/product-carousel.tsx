@@ -61,7 +61,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
             href={`/categorias/${product.category?.slug || ''}`}
             className="flex-shrink-0 group"
           >
-            <div className="relative w-48 md:w-56 rounded-3xl overflow-hidden glass shadow-warm transition-all duration-300 group-hover:shadow-warm-lg group-hover:-translate-y-1.5">
+            <div className="relative w-48 md:w-56 rounded-3xl overflow-hidden bg-card border border-border shadow-warm transition-all duration-300 group-hover:shadow-warm-lg group-hover:-translate-y-1.5">
               {/* Imagen */}
               <div className="relative h-40 md:h-44 bg-muted overflow-hidden">
                 {product.image_url ? (
@@ -82,7 +82,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
                 {product.category && (
                   <div className="absolute top-2.5 left-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider glass text-white px-2.5 py-1 rounded-full">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-black/55 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/10">
                       {product.category.name}
                     </span>
                   </div>

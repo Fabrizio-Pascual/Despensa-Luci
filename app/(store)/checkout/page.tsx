@@ -20,7 +20,7 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
 }
 
-const CAMBIO_DISPONIBLE = 5000
+const CAMBIO_DISPONIBLE = 5000 // referencia informativa, ya no bloquea el pedido
 
 export default function CheckoutPage() {
   const { items, total, updateQuantity, removeFromCart, clearCart, isLoading } = useCart()
@@ -34,7 +34,8 @@ export default function CheckoutPage() {
   const cashNum = parseFloat(cashAmount) || 0
   const cambio = cashNum - total
   const sinCambio = cashNum > 0 && cashNum < total
-  const cambioInsuficiente = cashNum > total && (cashNum - total) > CAMBIO_DISPONIBLE
+  // Ya no bloquea el pedido: solo se usa para avisarle al admin que revise si tiene cambio
+  const cambioAlto = cashNum > total && (cashNum - total) > CAMBIO_DISPONIBLE
 
   const handleSubmit = async () => {
     if (items.length === 0) { toast.error('Tu carrito está vacío'); return }
@@ -48,7 +49,7 @@ export default function CheckoutPage() {
 
       const notaFinal = [
         notes,
-        paymentMethod === 'efectivo' ? `Paga con: ${formatPrice(cashNum)}${cambio > 0 ? ` (vuelto: ${formatPrice(cambio)})` : ''}` : ''
+        paymentMethod === 'efectivo' ? `Paga con: ${formatPrice(cashNum)}${cambio > 0 ? ` (vuelto: ${formatPrice(cambio)}${cambioAlto ? ' ⚠️ VUELTO ALTO, VERIFICAR CAMBIO DISPONIBLE' : ''})` : ''}` : ''
       ].filter(Boolean).join(' | ')
 
       const { data: order, error: orderError } = await supabase
@@ -217,11 +218,11 @@ export default function CheckoutPage() {
                       <Input type="number" className="pl-7" placeholder={total.toString()} value={cashAmount} onChange={e => setCashAmount(e.target.value)} />
                     </div>
                     {cashNum > 0 && !sinCambio && (
-                      <div className={`rounded-lg p-3 text-sm ${cambioInsuficiente ? 'bg-destructive/10 border border-destructive/30' : 'bg-green-50 border border-green-200 dark:bg-green-950/30 dark:border-green-800'}`}>
-                        {cambioInsuficiente ? (
-                          <div className="flex items-center gap-2 text-destructive">
+                      <div className={`rounded-lg p-3 text-sm ${cambioAlto ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' : 'bg-green-50 border border-green-200 dark:bg-green-950/30 dark:border-green-800'}`}>
+                        {cambioAlto ? (
+                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                             <AlertCircle className="h-4 w-4" />
-                            <span>No tengo cambio para más de {formatPrice(CAMBIO_DISPONIBLE)}. Por favor traé el monto justo o pagá con débito.</span>
+                            <span>Vuelto: <strong>{formatPrice(cambio)}</strong>. Es un monto alto, te vamos a confirmar si hay cambio disponible.</span>
                           </div>
                         ) : cambio > 0 ? (
                           <p className="text-green-700 dark:text-green-400">Vuelto: <strong>{formatPrice(cambio)}</strong></p>
@@ -273,7 +274,7 @@ export default function CheckoutPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" size="lg" onClick={handleSubmit} disabled={isSubmitting || cambioInsuficiente}>
+              <Button className="w-full" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? 'Procesando...' : 'Confirmar pedido'}
               </Button>
             </CardFooter>

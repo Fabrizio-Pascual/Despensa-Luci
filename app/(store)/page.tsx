@@ -3,6 +3,7 @@ import { ArrowRight, ShoppingBag, Clock, Sparkles, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CategoryCard } from '@/components/category-card'
 import { ProductCarousel } from '@/components/product-carousel'
+import { HeroImage } from '@/components/hero-image'
 import { ReviewsSection } from '@/components/reviews-section'
 import { createClient } from '@/lib/supabase/server'
 
@@ -25,7 +26,8 @@ export default async function HomePage() {
 
       {/* HERO */}
       <section className="bg-warm-gradient relative overflow-hidden">
-        <div className="container mx-auto px-4 py-16 md:py-24">
+        <HeroImage />
+        <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">

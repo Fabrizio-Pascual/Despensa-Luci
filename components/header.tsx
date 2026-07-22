@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
 import { useTheme } from 'next-themes'
-import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, Sun, Moon, ChevronDown } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, Sun, Moon, ChevronDown, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -84,6 +84,9 @@ export function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Link href="/como-comprar" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <HelpCircle className="h-4 w-4" /> Cómo comprar
+          </Link>
         </nav>
 
         {/* Actions */}
@@ -189,6 +192,14 @@ export function Header() {
                 >
                   <span className="text-xl">🏠</span>
                   Inicio
+                </Link>
+                <Link
+                  href="/como-comprar"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors font-medium"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                  Cómo comprar
                 </Link>
                 <p className="px-4 pt-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categorías</p>
                 {categories.map((cat) => (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, CheckCircle2, XCircle as XCircleIcon } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Package, XCircle, AlertCircle, Hash, ChevronRight, Candy, CheckCircle2, XCircle as XCircleIcon, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { OrderChat } from '@/components/order-chat'
+import { OrderEditor } from '@/components/order-editor'
 
 const statusConfig = {
   pending:   { label: 'Pendiente',          icon: Clock,        variant: 'secondary'   as const },
@@ -52,6 +53,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [cambioMonto, setCambioMonto] = useState('')
   const [sendingCambio, setSendingCambio] = useState(false)
   const [adminId, setAdminId] = useState<string | null>(null)
+  const [editingOrder, setEditingOrder] = useState(false)
   const channelRef = useRef<any>(null)
   const subscribedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
@@ -277,8 +279,30 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         </Button>
       )}
 
+      {editingOrder ? (
+        <OrderEditor
+          orderId={order.id}
+          editNote={null}
+          items={order.order_items}
+          adminId={adminId}
+          isAdmin
+          customerId={order.profile?.id || null}
+          onCancel={() => setEditingOrder(false)}
+          onSaved={(newTotal, remainingItems) => {
+            setOrder((prev: any) => ({ ...prev, total: newTotal, order_items: remainingItems }))
+            setEditingOrder(false)
+          }}
+        />
+      ) : (
       <Card>
-        <CardHeader><CardTitle>Productos del pedido</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Productos del pedido</CardTitle>
+          {isActive && (
+            <Button variant="outline" size="sm" onClick={() => setEditingOrder(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+            </Button>
+          )}
+        </CardHeader>
         <CardContent className="space-y-3">
           {order.order_items?.map((item: any) => (
             <div key={item.id} className="flex items-center gap-3 py-2 border-b last:border-0">
@@ -307,6 +331,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           </div>
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Detalles</CardTitle></CardHeader>
