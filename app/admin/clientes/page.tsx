@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Users, ShoppingCart, DollarSign, Ban, CheckCircle } from 'lucide-react'
+import { Users, ShoppingCart, DollarSign, Ban, CheckCircle, Search, ShieldCheck, ShieldOff, Shield, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -17,41 +19,92 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+type ConfirmAction =
+  | { type: 'ban' | 'unban'; client: any }
+  | { type: 'make_admin' | 'remove_admin'; client: any }
+  | null
+
 export default function AdminClientsPage() {
   const [clients, setClients] = useState<any[]>([])
+  const [admins, setAdmins] = useState<any[]>([])
+  const [myRole, setMyRole] = useState<'user' | 'admin' | 'superadmin'>('admin')
   const [isLoading, setIsLoading] = useState(true)
-  const [banDialog, setBanDialog] = useState<{ open: boolean; client: any | null; action: 'ban' | 'unban' }>({ open: false, client: null, action: 'ban' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const supabase = useMemo(() => createClient(), [])
 
   const loadClients = useCallback(async () => {
-    const { data: profiles } = await supabase.from('profiles').select('*').eq('is_admin', false).order('created_at', { ascending: false })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: myProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (myProfile?.role) setMyRole(myProfile.role)
+    }
 
-    const stats = await Promise.all((profiles || []).map(async (profile) => {
+    const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+
+    const withStats = await Promise.all((profiles || []).map(async (profile: any) => {
       const { data: orders } = await supabase.from('orders').select('total').eq('user_id', profile.id).eq('status', 'completed')
       const { data: debts } = await supabase.from('debts').select('amount, paid_amount').eq('user_id', profile.id).eq('is_paid', false)
       return {
         ...profile,
-        totalSpent: orders?.reduce((s, o) => s + o.total, 0) || 0,
+        totalSpent: orders?.reduce((s: number, o: any) => s + o.total, 0) || 0,
         orderCount: orders?.length || 0,
-        pendingDebt: debts?.reduce((s, d) => s + (d.amount - d.paid_amount), 0) || 0,
+        pendingDebt: debts?.reduce((s: number, d: any) => s + (d.amount - d.paid_amount), 0) || 0,
       }
     }))
 
-    setClients(stats)
+    setClients(withStats.filter(p => (p.role || 'user') === 'user'))
+    setAdmins(withStats.filter(p => (p.role || 'user') !== 'user'))
     setIsLoading(false)
   }, [supabase])
 
   useEffect(() => { loadClients() }, [loadClients])
 
-  const handleBan = async () => {
-    if (!banDialog.client) return
-    const isBanning = banDialog.action === 'ban'
-    const { error } = await supabase.from('profiles').update({ is_banned: isBanning }).eq('id', banDialog.client.id)
+  const filteredClients = clients.filter(c =>
+    (c.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.phone || '').includes(searchQuery)
+  )
+  const filteredAdmins = admins.filter(c =>
+    (c.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.phone || '').includes(searchQuery)
+  )
+
+  const toggleCanFiar = async (client: any, value: boolean) => {
+    const { error } = await supabase.from('profiles').update({ can_fiar: value }).eq('id', client.id)
     if (error) { toast.error('Error al actualizar'); return }
-    toast.success(isBanning ? `${banDialog.client.full_name} baneado` : `${banDialog.client.full_name} desbaneado`)
-    setBanDialog({ open: false, client: null, action: 'ban' })
+    toast.success(value ? `${client.full_name} ahora puede sacar fiado` : `${client.full_name} ya no puede sacar fiado`)
     loadClients()
   }
+
+  const runConfirm = async () => {
+    if (!confirmAction) return
+    const { type, client } = confirmAction
+    try {
+      if (type === 'ban' || type === 'unban') {
+        const { error } = await supabase.from('profiles').update({ is_banned: type === 'ban' }).eq('id', client.id)
+        if (error) throw error
+        toast.success(type === 'ban' ? `${client.full_name} baneado` : `${client.full_name} desbaneado`)
+      } else if (type === 'make_admin') {
+        const { error } = await supabase.from('profiles').update({ role: 'admin', is_admin: true }).eq('id', client.id)
+        if (error) throw error
+        toast.success(`${client.full_name} ahora es administrador`)
+      } else if (type === 'remove_admin') {
+        const { error } = await supabase.from('profiles').update({ role: 'user', is_admin: false }).eq('id', client.id)
+        if (error) throw error
+        toast.success(`${client.full_name} ya no es administrador`)
+      }
+      setConfirmAction(null)
+      loadClients()
+    } catch {
+      toast.error('Error al aplicar el cambio')
+    }
+  }
+
+  // Solo superadmin puede tocar a otro admin (ascender/quitar/banear). Un admin
+  // nunca puede tocar a otro admin ni banearlo. Un superadmin no puede ser
+  // ni degradado ni baneado desde acá.
+  const canManageAdmin = (target: any) => myRole === 'superadmin' && target.role !== 'superadmin'
 
   const totalRevenue = clients.reduce((s, c) => s + c.totalSpent, 0)
   const totalDebt = clients.reduce((s, c) => s + c.pendingDebt, 0)
@@ -62,7 +115,7 @@ export default function AdminClientsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Clientes</h1>
-        <p className="text-muted-foreground">Listado y estadísticas de clientes</p>
+        <p className="text-muted-foreground">Listado y estadísticas de clientes y administradores</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -80,78 +133,142 @@ export default function AdminClientsPage() {
         </CardContent></Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Listado de clientes</CardTitle>
-          <CardDescription>{clients.length} clientes registrados</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Registro</TableHead>
-                <TableHead>Pedidos</TableHead>
-                <TableHead>Total gastado</TableHead>
-                <TableHead>Deuda</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay clientes</TableCell></TableRow>
-              ) : clients.map((c) => (
-                <TableRow key={c.id} className={c.is_banned ? 'opacity-50' : ''}>
-                  <TableCell className="font-medium">{c.full_name || 'Sin nombre'}</TableCell>
-                  <TableCell>{c.phone || '-'}</TableCell>
-                  <TableCell>{formatDate(c.created_at)}</TableCell>
-                  <TableCell><Badge variant="outline">{c.orderCount}</Badge></TableCell>
-                  <TableCell>{formatPrice(c.totalSpent)}</TableCell>
-                  <TableCell>
-                    {c.pendingDebt > 0
-                      ? <Badge variant="destructive">{formatPrice(c.pendingDebt)}</Badge>
-                      : <Badge variant="outline">Sin deuda</Badge>}
-                  </TableCell>
-                  <TableCell>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Buscar por nombre o teléfono..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+      </div>
+
+      <Tabs defaultValue="clientes">
+        <TabsList>
+          <TabsTrigger value="clientes">Clientes ({filteredClients.length})</TabsTrigger>
+          <TabsTrigger value="admins">Administradores ({filteredAdmins.length})</TabsTrigger>
+        </TabsList>
+
+        {/* --- CLIENTES --- */}
+        <TabsContent value="clientes" className="space-y-2 mt-4">
+          {filteredClients.length === 0 && (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">No hay clientes</CardContent></Card>
+          )}
+          {filteredClients.map((c) => (
+            <Card key={c.id} className={c.is_banned ? 'opacity-60' : ''}>
+              <button className="w-full text-left" onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}>
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{c.full_name || 'Sin nombre'}</p>
+                    <p className="text-xs text-muted-foreground">{c.phone || 'Sin teléfono'} · {formatDate(c.created_at)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {c.pendingDebt > 0 && <Badge variant="destructive">{formatPrice(c.pendingDebt)}</Badge>}
+                    {c.can_fiar && <Badge variant="outline" className="text-blue-600 border-blue-300">Fiado</Badge>}
                     {c.is_banned
                       ? <Badge variant="destructive">Baneado</Badge>
                       : <Badge variant="outline" className="text-green-600 border-green-300">Activo</Badge>}
-                  </TableCell>
-                  <TableCell>
+                    {expandedId === c.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                </CardContent>
+              </button>
+              {expandedId === c.id && (
+                <CardContent className="pt-0 pb-4 px-4 border-t space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm pt-3">
+                    <div><p className="text-muted-foreground">Pedidos</p><p className="font-medium">{c.orderCount}</p></div>
+                    <div><p className="text-muted-foreground">Total gastado</p><p className="font-medium">{formatPrice(c.totalSpent)}</p></div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="text-sm font-medium">Habilitar fiado</p>
+                      <p className="text-xs text-muted-foreground">Cliente de confianza: puede sacar productos fiados</p>
+                    </div>
+                    <Switch checked={!!c.can_fiar} onCheckedChange={(v) => toggleCanFiar(c, v)} />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {myRole === 'superadmin' && (
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setConfirmAction({ type: 'make_admin', client: c })}>
+                        <Shield className="h-3.5 w-3.5" />Hacer admin
+                      </Button>
+                    )}
                     {c.is_banned ? (
-                      <Button variant="outline" size="sm" onClick={() => setBanDialog({ open: true, client: c, action: 'unban' })}>
+                      <Button variant="outline" size="sm" onClick={() => setConfirmAction({ type: 'unban', client: c })}>
                         <CheckCircle className="h-4 w-4 mr-1" />Desbanear
                       </Button>
                     ) : (
                       <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
-                        onClick={() => setBanDialog({ open: true, client: c, action: 'ban' })}>
+                        onClick={() => setConfirmAction({ type: 'ban', client: c })}>
                         <Ban className="h-4 w-4 mr-1" />Banear
                       </Button>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </TabsContent>
 
-      <AlertDialog open={banDialog.open} onOpenChange={(o) => setBanDialog(prev => ({ ...prev, open: o }))}>
+        {/* --- ADMINISTRADORES --- */}
+        <TabsContent value="admins" className="space-y-2 mt-4">
+          {filteredAdmins.length === 0 && (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">No hay administradores</CardContent></Card>
+          )}
+          {filteredAdmins.map((a) => (
+            <Card key={a.id} className={a.is_banned ? 'opacity-60' : ''}>
+              <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="font-medium truncate flex items-center gap-2">
+                    {a.full_name || 'Sin nombre'}
+                    <Badge variant={a.role === 'superadmin' ? 'default' : 'secondary'}>
+                      {a.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                    </Badge>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{a.phone || 'Sin teléfono'} · {formatDate(a.created_at)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {canManageAdmin(a) ? (
+                    <>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setConfirmAction({ type: 'remove_admin', client: a })}>
+                        <ShieldOff className="h-3.5 w-3.5" />Quitar admin
+                      </Button>
+                      {a.is_banned ? (
+                        <Button variant="outline" size="sm" onClick={() => setConfirmAction({ type: 'unban', client: a })}>
+                          <CheckCircle className="h-4 w-4 mr-1" />Desbanear
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
+                          onClick={() => setConfirmAction({ type: 'ban', client: a })}>
+                          <Ban className="h-4 w-4 mr-1" />Banear
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5" />Protegido
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(o) => !o && setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{banDialog.action === 'ban' ? '¿Banear usuario?' : '¿Desbanear usuario?'}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmAction?.type === 'ban' && '¿Banear usuario?'}
+              {confirmAction?.type === 'unban' && '¿Desbanear usuario?'}
+              {confirmAction?.type === 'make_admin' && '¿Convertir en administrador?'}
+              {confirmAction?.type === 'remove_admin' && '¿Quitar permisos de administrador?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {banDialog.action === 'ban'
-                ? `${banDialog.client?.full_name} no podrá acceder a la app ni hacer pedidos.`
-                : `${banDialog.client?.full_name} recuperará el acceso a la app.`}
+              {confirmAction?.type === 'ban' && `${confirmAction.client?.full_name} no podrá acceder a la app ni hacer pedidos.`}
+              {confirmAction?.type === 'unban' && `${confirmAction.client?.full_name} recuperará el acceso a la app.`}
+              {confirmAction?.type === 'make_admin' && `${confirmAction.client?.full_name} va a poder entrar al panel de administración.`}
+              {confirmAction?.type === 'remove_admin' && `${confirmAction.client?.full_name} pasará a ser un cliente normal.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBan} className={banDialog.action === 'ban' ? 'bg-destructive text-destructive-foreground' : ''}>
-              {banDialog.action === 'ban' ? 'Sí, banear' : 'Sí, desbanear'}
+            <AlertDialogAction onClick={runConfirm} className={confirmAction?.type === 'ban' ? 'bg-destructive text-destructive-foreground' : ''}>
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

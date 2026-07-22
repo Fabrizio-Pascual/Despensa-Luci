@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
-import { Plus, Pencil, Trash2, Package, Search, FileSpreadsheet, Layers, Trash } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Search, FileSpreadsheet, Layers, Trash, EyeOff, Eye, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,6 +41,9 @@ export default function AdminProductsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isDeletingAll, setIsDeletingAll] = useState(false) // NUEVO
   const [variantsProduct, setVariantsProduct] = useState<Product | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+  const [isBulkWorking, setIsBulkWorking] = useState(false)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -77,6 +81,42 @@ export default function AdminProductsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev =>
+      prev.size === filteredProducts.length ? new Set() : new Set(filteredProducts.map(p => p.id))
+    )
+  }
+
+  const handleBulkDelete = async () => {
+    setIsBulkWorking(true)
+    try {
+      const { error } = await supabase.from('products').delete().in('id', Array.from(selectedIds))
+      if (error) throw error
+      toast.success(`${selectedIds.size} producto(s) eliminado(s)`)
+      setSelectedIds(new Set()); setIsBulkDeleteOpen(false); loadData()
+    } catch { toast.error('Error al eliminar los seleccionados') }
+    finally { setIsBulkWorking(false) }
+  }
+
+  const handleBulkToggleActive = async (active: boolean) => {
+    setIsBulkWorking(true)
+    try {
+      const { error } = await supabase.from('products').update({ is_active: active }).in('id', Array.from(selectedIds))
+      if (error) throw error
+      toast.success(`${selectedIds.size} producto(s) ${active ? 'activado(s)' : 'desactivado(s)'}`)
+      setSelectedIds(new Set()); loadData()
+    } catch { toast.error('Error al actualizar los seleccionados') }
+    finally { setIsBulkWorking(false) }
+  }
 
   const resetForm = () => {
     setName(''); setDescription(''); setPrice(''); setStock('')
@@ -118,13 +158,6 @@ export default function AdminProductsPage() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleToggleActive = async (product: Product) => {
-    const { error } = await supabase.from('products').update({ is_active: !product.is_active }).eq('id', product.id)
-    if (error) { toast.error('Error al cambiar el estado'); return }
-    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p))
-    toast.success(!product.is_active ? 'Producto activado' : 'Producto desactivado (no se muestra a los clientes)')
   }
 
   const handleDelete = async () => {
@@ -201,10 +234,36 @@ export default function AdminProductsPage() {
         </Select>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5">
+          <span className="text-sm font-medium">{selectedIds.size} seleccionado(s)</span>
+          <div className="flex-1" />
+          <Button size="sm" variant="outline" disabled={isBulkWorking} onClick={() => handleBulkToggleActive(true)} className="gap-1.5">
+            <Eye className="h-3.5 w-3.5" />Activar
+          </Button>
+          <Button size="sm" variant="outline" disabled={isBulkWorking} onClick={() => handleBulkToggleActive(false)} className="gap-1.5">
+            <EyeOff className="h-3.5 w-3.5" />Desactivar
+          </Button>
+          <Button size="sm" variant="destructive" disabled={isBulkWorking} onClick={() => setIsBulkDeleteOpen(true)} className="gap-1.5">
+            <Trash2 className="h-3.5 w-3.5" />Eliminar
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Seleccionar todos"
+                />
+              </TableHead>
               <TableHead className="w-12">#</TableHead> {/* NUEVO: Columna de numeración */}
               <TableHead>Producto</TableHead>
               <TableHead>Categoría</TableHead>
@@ -216,9 +275,16 @@ export default function AdminProductsPage() {
           </TableHeader>
           <TableBody>
             {filteredProducts.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay productos</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay productos</TableCell></TableRow>
             ) : filteredProducts.map((product, index) => (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} data-state={selectedIds.has(product.id) ? 'selected' : undefined}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedIds.has(product.id)}
+                    onCheckedChange={() => toggleSelected(product.id)}
+                    aria-label={`Seleccionar ${product.name}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell> {/* NUEVO: Mostrar número */}
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -241,16 +307,9 @@ export default function AdminProductsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={product.is_active}
-                      onCheckedChange={() => handleToggleActive(product)}
-                      title={product.is_active ? 'Desactivar producto' : 'Activar producto'}
-                    />
-                    <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                      {product.is_active ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </div>
+                  <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                    {product.is_active ? 'Activo' : 'Inactivo'}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   {/* Botón sabores/variantes */}
@@ -391,6 +450,22 @@ export default function AdminProductsPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} disabled={isDeletingAll} className="bg-destructive text-destructive-foreground">
               {isDeletingAll ? 'Borrando...' : 'Sí, borrar TODOS'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete dialog para seleccionados */}
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar {selectedIds.size} producto(s)</AlertDialogTitle>
+            <AlertDialogDescription>¿Seguro que querés eliminar los {selectedIds.size} productos seleccionados? No se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={isBulkWorking} className="bg-destructive text-destructive-foreground">
+              {isBulkWorking ? 'Eliminando...' : 'Sí, eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -40,6 +40,8 @@ interface ClientDebt {
 
 export default function AdminDeudasPage() {
   const [clientDebts, setClientDebts] = useState<ClientDebt[]>([])
+  const [trustedClients, setTrustedClients] = useState<any[]>([])
+  const [trustedSearch, setTrustedSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedClient, setSelectedClient] = useState<ClientDebt | null>(null)
@@ -49,6 +51,15 @@ export default function AdminDeudasPage() {
   const [filterLetter, setFilterLetter] = useState<string | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
+
+  const loadTrustedClients = useCallback(async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, phone')
+      .eq('can_fiar', true)
+      .order('full_name')
+    setTrustedClients(data || [])
+  }, [supabase])
 
   const loadDebts = useCallback(async () => {
     // Traer deudas con el pedido
@@ -100,6 +111,7 @@ export default function AdminDeudasPage() {
 
   useEffect(() => {
     loadDebts()
+    loadTrustedClients()
 
     const channel = supabase.channel('admin-debts-realtime')
     channel.on('postgres_changes', {
@@ -200,6 +212,30 @@ export default function AdminDeudasPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Clientes con fiado habilitado</CardTitle>
+          <p className="text-xs text-muted-foreground">{trustedClients.length} cliente(s) de confianza pueden sacar fiado</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar cliente habilitado..." value={trustedSearch} onChange={e => setTrustedSearch(e.target.value)} className="pl-9" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {trustedClients.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Todavía no habilitaste a ningún cliente. Hacelo desde Clientes → tocá un cliente → "Habilitar fiado".</p>
+            ) : trustedClients
+              .filter(c => (c.full_name || '').toLowerCase().includes(trustedSearch.toLowerCase()) || (c.phone || '').includes(trustedSearch))
+              .map(c => (
+                <Badge key={c.id} variant="outline" className="text-blue-600 border-blue-300 py-1.5 px-3">
+                  {c.full_name || 'Sin nombre'}{c.phone ? ` · ${c.phone}` : ''}
+                </Badge>
+              ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-3">
         <div className="relative max-w-sm">
