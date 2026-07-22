@@ -38,10 +38,19 @@ export function PushSubscriber() {
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         })
 
+        const subJson = JSON.parse(JSON.stringify(subscription))
+
+        // Antes esto pisaba la suscripción anterior del mismo usuario
+        // (onConflict: 'user_id'), así que un admin solo podía tener UN
+        // dispositivo recibiendo push a la vez (si te suscribías en el
+        // celular, se perdía la de la PC, y viceversa). Ahora cada
+        // dispositivo se identifica por su propio "endpoint", así podés
+        // tener PC y celular suscriptos al mismo tiempo.
         await supabase.from('push_subscriptions').upsert({
           user_id: user.id,
-          subscription: JSON.parse(JSON.stringify(subscription)),
-        }, { onConflict: 'user_id' })
+          subscription: subJson,
+          endpoint: subJson.endpoint,
+        }, { onConflict: 'endpoint' })
 
       } catch (err) {
         console.error('Push subscription error:', err)

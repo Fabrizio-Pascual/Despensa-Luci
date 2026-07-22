@@ -5,6 +5,7 @@ import { Package, User, FileText, Store } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CartProvider } from '@/components/cart-context'
 import { Header } from '@/components/header'
+import { PushSubscriber } from '@/components/push-subscribe'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -23,6 +24,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <CartProvider>
       <div className="min-h-screen flex flex-col">
+        {/* Pide permiso de notificaciones y suscribe este navegador/celular
+            del CLIENTE a push (antes solo se hacía en /admin). */}
+        <PushSubscriber />
         <Header />
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row gap-8">
