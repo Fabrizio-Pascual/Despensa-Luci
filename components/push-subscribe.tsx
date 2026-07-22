@@ -1,63 +1,17 @@
 'use client'
 
 import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { subscribeToPush } from '@/lib/push'
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
-  }
-  return outputArray
-}
-
+/**
+ * Intento automático y silencioso de suscribir al usuario a push apenas
+ * entra al dashboard/admin. Si el navegador no muestra el permiso solo
+ * (pasa seguido), el usuario igual tiene el botón manual "Activar
+ * notificaciones" en su perfil (ver NotificationsToggle).
+ */
 export function PushSubscriber() {
   useEffect(() => {
-    const subscribe = async () => {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const reg = await navigator.serviceWorker.register('/sw.js')
-        await navigator.serviceWorker.ready
-
-        const permission = await Notification.requestPermission()
-        if (permission !== 'granted') return
-
-        const existing = await reg.pushManager.getSubscription()
-        const subscription = existing || await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        })
-
-        const subJson = JSON.parse(JSON.stringify(subscription))
-
-        // Antes esto pisaba la suscripción anterior del mismo usuario
-        // (onConflict: 'user_id'), así que un admin solo podía tener UN
-        // dispositivo recibiendo push a la vez (si te suscribías en el
-        // celular, se perdía la de la PC, y viceversa). Ahora cada
-        // dispositivo se identifica por su propio "endpoint", así podés
-        // tener PC y celular suscriptos al mismo tiempo.
-        await supabase.from('push_subscriptions').upsert({
-          user_id: user.id,
-          subscription: subJson,
-          endpoint: subJson.endpoint,
-        }, { onConflict: 'endpoint' })
-
-      } catch (err) {
-        console.error('Push subscription error:', err)
-      }
-    }
-
-    subscribe()
+    subscribeToPush()
   }, [])
 
   return null
