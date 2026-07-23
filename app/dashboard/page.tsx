@@ -1,238 +1,108 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { User, Save, Eye, EyeOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Clock, CheckCircle, Package, XCircle, AlertCircle } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { createClient } from '@/lib/supabase/client'
-import { toast } from 'sonner'
-import type { Profile } from '@/lib/types'
-import { NotificationsToggle } from '@/components/notifications-toggle'
-import { AvatarPicker } from '@/components/avatar-picker'
+import { createClient } from '@/lib/supabase/server'
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const supabase = createClient()
+const statusConfig = {
+  pending: { label: 'Pendiente', icon: Clock, variant: 'secondary' as const },
+  preparing: { label: 'Preparando', icon: Package, variant: 'default' as const },
+  ready: { label: 'Listo para retirar', icon: AlertCircle, variant: 'default' as const },
+  completed: { label: 'Completado', icon: CheckCircle, variant: 'outline' as const },
+  cancelled: { label: 'Cancelado', icon: XCircle, variant: 'destructive' as const },
+}
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS'
+  }).format(price)
+}
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
 
-      if (data) {
-        setProfile(data)
-        setFullName(data.full_name || '')
-        setPhone(data.phone || '')
-        setAddress(data.address || '')
-      }
-      setIsLoading(false)
-    }
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-    loadProfile()
-  }, [supabase])
-
-  const handleSaveProfile = async () => {
-    if (!profile) return
-    setIsSaving(true)
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          phone,
-          address,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', profile.id)
-
-      if (error) throw error
-      toast.success('Perfil actualizado')
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      toast.error('Error al actualizar perfil')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden')
-      return
-    }
-
-    if (newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-
-    setIsChangingPassword(true)
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-
-      if (error) throw error
-
-      toast.success('Contraseña actualizada')
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-    } catch (error) {
-      console.error('Error changing password:', error)
-      toast.error('Error al cambiar contraseña')
-    } finally {
-      setIsChangingPassword(false)
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    )
-  }
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('*, order_items(*, product:products(name))')
+    .eq('user_id', user!.id)
+    .order('created_at', { ascending: false })
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        {profile && (
-          <AvatarPicker
-            userId={profile.id}
-            fullName={profile.full_name}
-            avatarUrl={profile.avatar_url}
-            onChange={(url) => setProfile((p) => (p ? { ...p, avatar_url: url } : p))}
-          />
-        )}
-        <div>
-          <h1 className="text-2xl font-bold">Mi Perfil</h1>
-          <p className="text-muted-foreground">Administra tu informacion personal</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Mis Pedidos</h1>
+        <p className="text-muted-foreground">Historial y seguimiento de tus pedidos</p>
       </div>
 
-      <NotificationsToggle />
+      {orders && orders.length > 0 ? (
+        <div className="space-y-4">
+          {orders.map((order) => {
+            const status = statusConfig[order.status as keyof typeof statusConfig]
+            const StatusIcon = status.icon
 
-      {/* Profile Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Informacion personal
-          </CardTitle>
-          <CardDescription>
-            Actualizá tu nombre, telefono y direccion
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Nombre completo</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Tu nombre"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Telefono</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Tu numero de telefono"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Direccion</Label>
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Tu direccion"
-            />
-          </div>
-          <Button onClick={handleSaveProfile} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSaving ? 'Guardando...' : 'Guardar cambios'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Change Password */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cambiar contraseña</CardTitle>
-          <CardDescription>
-            Actualiza tu contraseña de acceso
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">Nueva contraseña</Label>
-            <div className="relative">
-              <Input
-                id="newPassword"
-                type={showPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimo 6 caracteres"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repetí la contraseña"
-            />
-          </div>
-          <Button 
-            onClick={handleChangePassword} 
-            disabled={isChangingPassword || !newPassword || !confirmPassword}
-          >
-            {isChangingPassword ? 'Cambiando...' : 'Cambiar contraseña'}
-          </Button>
-        </CardContent>
-      </Card>
+            return (
+              <Link key={order.id} href={`/dashboard/pedidos/${order.id}`}>
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-base">
+                          Pedido #{order.id.slice(0, 8)}
+                        </CardTitle>
+                        <CardDescription>
+                          {formatDate(order.created_at)}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={status.variant} className="flex items-center gap-1">
+                        <StatusIcon className="h-3 w-3" />
+                        {status.label}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {order.order_items?.length} producto(s)
+                      </div>
+                      <div className="font-semibold text-primary">
+                        {formatPrice(order.total)}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="font-semibold text-lg mb-2">No tenes pedidos todavia</h3>
+            <p className="text-muted-foreground mb-4">
+              Cuando hagas tu primer pedido, aparecera aca
+            </p>
+            <Link
+              href="/"
+              className="text-primary hover:underline font-medium"
+            >
+              Empezar a comprar
+            </Link>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
