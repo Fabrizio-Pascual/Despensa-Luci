@@ -11,3 +11,5 @@ Stack: Next.js · React · TypeScript · Supabase · Tailwind CSS · Vercel
 Dejo el case study completo en el documento 📎[despensa_luci_case_study (2).pdf](https://github.com/user-attachments/files/30292071/despensa_luci_case_study.2.pdf)
 
 #desarrolloweb #frontend #nextjs #react #supabase #buildinpublic
+
+Link : https://despensa-luci-puce.vercel.app/
