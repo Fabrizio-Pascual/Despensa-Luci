@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Profile } from '@/lib/types'
 import { NotificationsToggle } from '@/components/notifications-toggle'
+import { AvatarPicker } from '@/components/avatar-picker'
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -116,9 +117,19 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Mi Perfil</h1>
-        <p className="text-muted-foreground">Administra tu informacion personal</p>
+      <div className="flex items-center gap-4">
+        {profile && (
+          <AvatarPicker
+            userId={profile.id}
+            fullName={profile.full_name}
+            avatarUrl={profile.avatar_url}
+            onChange={(url) => setProfile((p) => (p ? { ...p, avatar_url: url } : p))}
+          />
+        )}
+        <div>
+          <h1 className="text-2xl font-bold">Mi Perfil</h1>
+          <p className="text-muted-foreground">Administra tu informacion personal</p>
+        </div>
       </div>
 
       <NotificationsToggle />

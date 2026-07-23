@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Store, Eye, EyeOff } from 'lucide-react'
+import { Store, Eye, EyeOff, PartyPopper, ShoppingBasket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
+import { GoogleAuthButton } from '@/components/google-auth-button'
 import { toast } from 'sonner'
 
 export default function SignUpPage() {
@@ -62,20 +63,39 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background">
-      <Card className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden bg-gradient-to-br from-accent/10 via-background to-primary/10">
+      {/* Blobs decorativos */}
+      <div className="pointer-events-none absolute -top-20 -right-24 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/4 left-8 hidden md:block text-accent/20">
+        <ShoppingBasket className="h-24 w-24" />
+      </div>
+
+      <Card className="relative w-full max-w-md border-2 shadow-xl shadow-accent/10 backdrop-blur">
         <CardHeader className="text-center">
-          <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <Store className="h-8 w-8 text-primary" />
+          <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4 group">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30 transition-transform group-hover:scale-105">
+              <Store className="h-6 w-6" />
+            </span>
             <span className="text-xl font-bold">Despensa Luci</span>
           </Link>
-          <CardTitle className="text-2xl">Crear cuenta</CardTitle>
+          <CardTitle className="text-2xl flex items-center justify-center gap-1.5">
+            Sumate a la familia <PartyPopper className="h-5 w-5 text-primary" />
+          </CardTitle>
           <CardDescription>
             Registrate para hacer tus pedidos online
           </CardDescription>
         </CardHeader>
+        <CardContent className="space-y-4">
+          <GoogleAuthButton label="Registrarme con Google" />
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">o con tu email</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        </CardContent>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-0">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nombre completo</Label>
               <Input
@@ -141,7 +161,11 @@ export default function SignUpPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md shadow-primary/20"
+              disabled={isLoading}
+            >
               {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
             </Button>
             <p className="text-sm text-muted-foreground text-center">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Users, ShoppingCart, DollarSign, Ban, CheckCircle, Search, ShieldCheck, ShieldOff, Shield, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +18,9 @@ function formatPrice(price: number) {
 }
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+function getInitials(name?: string | null) {
+  return (name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 }
 
 type ConfirmAction =
@@ -153,9 +157,17 @@ export default function AdminClientsPage() {
             <Card key={c.id} className={c.is_banned ? 'opacity-60' : ''}>
               <button className="w-full text-left" onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}>
                 <CardContent className="p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{c.full_name || 'Sin nombre'}</p>
-                    <p className="text-xs text-muted-foreground">{c.phone || 'Sin teléfono'} · {formatDate(c.created_at)}</p>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-10 w-10 border shrink-0">
+                      <AvatarImage src={c.avatar_url || undefined} alt={c.full_name || 'Avatar'} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
+                        {getInitials(c.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{c.full_name || 'Sin nombre'}</p>
+                      <p className="text-xs text-muted-foreground">{c.phone || 'Sin teléfono'} · {formatDate(c.created_at)}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {c.pendingDebt > 0 && <Badge variant="destructive">{formatPrice(c.pendingDebt)}</Badge>}
@@ -211,14 +223,22 @@ export default function AdminClientsPage() {
           {filteredAdmins.map((a) => (
             <Card key={a.id} className={a.is_banned ? 'opacity-60' : ''}>
               <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <p className="font-medium truncate flex items-center gap-2">
-                    {a.full_name || 'Sin nombre'}
-                    <Badge variant={a.role === 'superadmin' ? 'default' : 'secondary'}>
-                      {a.role === 'superadmin' ? 'Superadmin' : 'Admin'}
-                    </Badge>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{a.phone || 'Sin teléfono'} · {formatDate(a.created_at)}</p>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-10 w-10 border shrink-0">
+                    <AvatarImage src={a.avatar_url || undefined} alt={a.full_name || 'Avatar'} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
+                      {getInitials(a.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate flex items-center gap-2">
+                      {a.full_name || 'Sin nombre'}
+                      <Badge variant={a.role === 'superadmin' ? 'default' : 'secondary'}>
+                        {a.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{a.phone || 'Sin teléfono'} · {formatDate(a.created_at)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {canManageAdmin(a) ? (

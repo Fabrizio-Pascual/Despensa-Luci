@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
 import { CartSheet } from '@/components/cart-sheet'
@@ -41,6 +42,13 @@ export function Header() {
     }
     loadCategories()
   }, [supabase, authLoading])
+
+  const initials = (profile?.full_name || user?.email || '?')
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 
   const handleSignOut = async () => {
     try {
@@ -122,8 +130,13 @@ export function Header() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8 border border-border">
+                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -228,9 +241,12 @@ export function Header() {
               {user && (
                 <div className="shrink-0 p-4 border-t bg-card">
                   <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 mb-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary" />
-                    </div>
+                    <Avatar className="h-9 w-9 border border-border">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <p className="text-sm font-medium">{profile?.full_name || user.email}</p>
                       <p className="text-xs text-muted-foreground">Mi cuenta</p>
