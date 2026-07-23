@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Search, ShoppingCart, CreditCard, Package, Phone, MousePointerClick } from 'lucide-react'
+import { ArrowLeft, Search, ShoppingCart, CreditCard, Package, Mail, MousePointerClick, Bell, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -12,27 +12,37 @@ const pasos = [
   {
     icon: MousePointerClick,
     titulo: '2. Agregalo al carrito',
-    texto: 'Cuando encuentres el producto, tocá el botón "Agregar al carrito". Podés agregar todos los productos que quieras, uno por uno.',
+    texto: 'Cuando encuentres el producto, tocá el botón "Agregar" (el del ícono del carrito 🛒). Si el producto tiene variantes (por ejemplo distintos tamaños o sabores), primero elegí la opción que quieras. Podés agregar todos los productos que necesites, uno por uno.',
   },
   {
     icon: ShoppingCart,
     titulo: '3. Revisá tu carrito',
-    texto: 'Arriba a la derecha vas a ver un carrito 🛒 con un numerito. Ese número te dice cuántos productos tenés agregados. Tocá ahí para ver la lista completa y cambiar cantidades si hace falta.',
+    texto: 'Arriba a la derecha vas a ver un carrito 🛒 con un numerito. Ese número te dice cuántos productos tenés agregados. Tocá ahí para ver la lista completa, cambiar cantidades y, cuando estés listo, tocar "Finalizar pedido".',
   },
   {
     icon: CreditCard,
     titulo: '4. Confirmá el pedido',
-    texto: 'Tocá "Finalizar compra". Ahí elegís cómo vas a pagar (efectivo, débito o fiado) y confirmás. Si pagás en efectivo, decinos con cuánto vas a pagar para tener el vuelto preparado.',
+    texto: 'Ahí elegís cómo vas a pagar: efectivo, débito o fiado. Si pagás en efectivo, decinos con cuánto vas a pagar para tener el vuelto preparado. Cuando esté todo listo, tocá "Confirmar pedido".',
   },
   {
     icon: Package,
-    titulo: '5. Retirá tu pedido',
-    texto: 'Te va a aparecer un código de retiro. Guardalo (podés sacarle una foto a la pantalla). Cuando esté listo para retirar, te va a llegar un aviso. Vas al local, mostrás el código y listo.',
+    titulo: '5. Seguí tu pedido y retiralo',
+    texto: 'En "Mis pedidos" vas a ver el estado y, cuando esté en preparación, un código de retiro. Guardalo (podés sacarle una foto a la pantalla). Cuando esté listo, vas al local, mostrás el código y listo.',
   },
   {
-    icon: Phone,
+    icon: MessageCircle,
+    titulo: 'Si hay que avisarte algo',
+    texto: 'Si falta un producto o no hay cambio exacto para tu vuelto, te vamos a escribir por el chat del pedido (lo encontrás dentro de "Mis pedidos") para proponerte una solución. Ahí mismo podés responder si estás de acuerdo o no.',
+  },
+  {
+    icon: Bell,
+    titulo: 'Activá las notificaciones',
+    texto: 'Cuando la app te lo pida, aceptá recibir notificaciones para enterarte al instante cuando tu pedido pase a "en preparación" o esté listo para retirar. Si las bloqueaste sin querer, tocá el candado 🔒 en la barra de direcciones del navegador y permitilas.',
+  },
+  {
+    icon: Mail,
     titulo: '¿Tenés dudas?',
-    texto: 'Si algo no te queda claro o preferís que te ayudemos por teléfono, comunicate con nosotros y con gusto te acompañamos en el pedido.',
+    texto: 'Si algo no te queda claro, escribinos desde el botón "Contactar soporte" al pie de la página, o directamente por el chat de tu pedido si ya hiciste uno. Con gusto te ayudamos.',
   },
 ]
 
