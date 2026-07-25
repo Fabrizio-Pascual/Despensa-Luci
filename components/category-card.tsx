@@ -27,7 +27,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
   return (
     <Link href={`/categorias/${category.slug}`}>
-      <Card className="group overflow-hidden transition-all hover:shadow-lg hover:border-primary/50">
+      <Card className="group overflow-hidden card-hover hover:border-primary/50">
         <CardContent className="p-0">
           <div className="relative aspect-[4/3] bg-muted">
             {imageUrl ? (

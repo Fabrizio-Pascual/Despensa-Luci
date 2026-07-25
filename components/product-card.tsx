@@ -28,6 +28,7 @@ export function ProductCard({ product }: { product: Product }) {
   const { items, addToCart, updateQuantity, removeFromCart } = useCart()
   const [variants, setVariants] = useState<Variant[]>([])
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
+  const [justAdded, setJustAdded] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   // Cargar variantes del producto
@@ -65,6 +66,8 @@ export function ProductCard({ product }: { product: Product }) {
     if (isOutOfStock) return
     if (hasVariants && !selectedVariant) return
     addToCart(product.id, 1, variantId, selectedVariant?.name || null)
+    setJustAdded(true)
+    setTimeout(() => setJustAdded(false), 400)
   }
 
   const handleIncrement = () => {
@@ -107,7 +110,7 @@ export function ProductCard({ product }: { product: Product }) {
             </Badge>
           )}
           {/* Precio como pill flotante sobre la imagen */}
-          <span className="price-pill absolute bottom-2 left-2">
+          <span className={`price-pill absolute bottom-2 left-2 ${justAdded ? 'cart-bump' : ''}`}>
             {formatPrice(effectivePrice)}
           </span>
         </div>

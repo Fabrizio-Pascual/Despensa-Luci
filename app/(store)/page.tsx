@@ -29,7 +29,7 @@ export default async function HomePage() {
         <HeroImage />
         <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="relative z-10">
+            <div className="relative z-10 hero-entrance">
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Pedidos online · Retiro en local</span>
@@ -54,18 +54,18 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="hidden md:grid grid-cols-2 gap-4 relative z-10">
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-6 shadow-warm border border-border/60 col-span-2">
+            <div className="hidden md:grid grid-cols-2 gap-4 relative z-10 hero-entrance-delay">
+              <div className="bg-card/80 backdrop-blur rounded-2xl p-6 shadow-warm border border-border/60 col-span-2 floating-card">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Abierto 24hs</p>
                 <p className="text-2xl font-bold text-foreground">Hacé tu pedido</p>
                 <p className="text-sm text-muted-foreground mt-1">cuando quieras, desde donde estés</p>
               </div>
-              <div className="bg-primary/10 rounded-2xl p-5 border border-primary/20">
+              <div className="bg-primary/10 rounded-2xl p-5 border border-primary/20 floating-card" style={{ animationDelay: '-2s' }}>
                 <p className="text-3xl font-bold text-primary">{categories?.length || 0}</p>
                 <p className="text-sm font-medium text-foreground mt-1">Categorías</p>
                 <p className="text-xs text-muted-foreground">de productos</p>
               </div>
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-5 shadow-warm border border-border/60">
+              <div className="bg-card/80 backdrop-blur rounded-2xl p-5 shadow-warm border border-border/60 floating-card" style={{ animationDelay: '-4s' }}>
                 <p className="text-3xl font-bold text-foreground">{products?.length || 0}+</p>
                 <p className="text-sm font-medium text-foreground mt-1">Productos</p>
                 <p className="text-xs text-muted-foreground">disponibles hoy</p>
