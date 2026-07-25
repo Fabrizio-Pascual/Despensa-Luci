@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Trash2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -52,8 +52,8 @@ export function CartSheet({ children }: { children: ReactNode }) {
                 {items.map((item) => {
                   const variantId = item.variant_id || null
                   return (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    <div key={item.id} className="flex gap-4 p-3 rounded-2xl bg-muted/40 border border-border/50 transition-all duration-300 hover:shadow-warm active:scale-[0.98]">
+                      <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                         {item.product.image_url ? (
                           <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
                         ) : (
@@ -63,32 +63,36 @@ export function CartSheet({ children }: { children: ReactNode }) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">
-                          {item.product.name}
-                          {item.variant_name && (
-                            <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>
-                          )}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button variant="outline" size="icon" className="h-7 w-7"
-                            onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                          <Button variant="outline" size="icon" className="h-7 w-7"
-                            onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)}
-                            disabled={item.quantity >= item.product.stock}>
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto text-destructive hover:text-destructive"
-                            onClick={() => removeFromCart(item.product_id, variantId)}>
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-medium text-sm truncate">
+                            {item.product.name}
+                            {item.variant_name && (
+                              <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>
+                            )}
+                          </h4>
+                          <button
+                            className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                            onClick={() => removeFromCart(item.product_id, variantId)}
+                          >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </button>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-sm">{formatPrice(item.product.price * item.quantity)}</p>
+                        <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-3 bg-muted rounded-full px-3 py-1">
+                            <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150"
+                              onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
+                            <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150 disabled:opacity-40 disabled:pointer-events-none"
+                              onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)}
+                              disabled={item.quantity >= item.product.stock}>
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <p className="font-semibold text-sm text-primary">{formatPrice(item.product.price * item.quantity)}</p>
+                        </div>
                       </div>
                     </div>
                   )
@@ -98,13 +102,16 @@ export function CartSheet({ children }: { children: ReactNode }) {
 
             <Separator />
 
-            <SheetFooter className="flex-col gap-4 sm:flex-col">
+            <SheetFooter className="flex-col gap-4 sm:flex-col glass -mx-6 px-6 pt-4 rounded-t-2xl">
               <div className="flex justify-between items-center w-full">
                 <span className="text-lg font-semibold">Total</span>
                 <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
               </div>
-              <Button className="w-full" size="lg" asChild onClick={() => setOpen(false)}>
-                <Link href="/checkout">Finalizar pedido</Link>
+              <Button className="w-full group" size="lg" asChild onClick={() => setOpen(false)}>
+                <Link href="/checkout" className="flex items-center justify-center gap-2">
+                  Finalizar pedido
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
             </SheetFooter>
           </>

@@ -143,7 +143,7 @@ export default function CheckoutPage() {
                 const variantId = item.variant_id || null
                 return (
                   <div key={item.id} className="flex gap-4 py-4 border-b last:border-0">
-                    <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                       {item.product.image_url ? (
                         <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
                       ) : (
@@ -159,20 +159,22 @@ export default function CheckoutPage() {
                       </h4>
                       <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-10 text-center font-medium">{item.quantity}</span>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-destructive hover:text-destructive" onClick={() => removeFromCart(item.product_id, variantId)}>
+                        <div className="flex items-center gap-3 bg-muted rounded-full px-3 py-1">
+                          <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
+                          <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150 disabled:opacity-40 disabled:pointer-events-none" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-muted-foreground hover:text-destructive transition-colors" onClick={() => removeFromCart(item.product_id, variantId)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">{formatPrice(item.product.price * item.quantity)}</p>
+                      <p className="font-semibold text-primary">{formatPrice(item.product.price * item.quantity)}</p>
                     </div>
                   </div>
                 )
@@ -199,7 +201,7 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
-                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'efectivo' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
                   <RadioGroupItem value="efectivo" id="efectivo" />
                   <Label htmlFor="efectivo" className="flex items-center gap-3 cursor-pointer flex-1">
                     <Banknote className="h-5 w-5 text-green-600" />
@@ -235,7 +237,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'debito' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
                   <RadioGroupItem value="debito" id="debito" />
                   <Label htmlFor="debito" className="flex items-center gap-3 cursor-pointer flex-1">
                     <CreditCard className="h-5 w-5 text-primary" />
@@ -246,7 +248,7 @@ export default function CheckoutPage() {
                   </Label>
                 </div>
 
-                <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'boucher' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
                   <RadioGroupItem value="boucher" id="boucher" />
                   <Label htmlFor="boucher" className="flex items-center gap-3 cursor-pointer flex-1">
                     <FileText className="h-5 w-5 text-yellow-600" />
@@ -274,7 +276,7 @@ export default function CheckoutPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
+              <Button className="w-full rounded-full shadow-warm-lg" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? 'Procesando...' : 'Confirmar pedido'}
               </Button>
             </CardFooter>
