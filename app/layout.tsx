@@ -68,7 +68,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="es" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`dark ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -79,6 +79,7 @@ export default async function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
+          forcedTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

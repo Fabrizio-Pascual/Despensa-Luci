@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
-import { useTheme } from 'next-themes'
-import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, Sun, Moon, ChevronDown, HelpCircle } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -19,7 +18,6 @@ export function Header() {
   const { user, profile, loading: authLoading } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { itemCount } = useCart()
-  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const supabase = useMemo(() => createClient(), [])
@@ -101,18 +99,6 @@ export function Header() {
         <div className="flex items-center gap-2">
           {/* Búsqueda de productos */}
           <ProductSearch />
-
-          {/* Theme toggle */}
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-          )}
 
           {/* Cart */}
           <CartSheet>
