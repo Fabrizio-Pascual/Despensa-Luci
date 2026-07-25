@@ -78,8 +78,8 @@ export default async function RootLayout({
       <body className="font-sans antialiased min-h-screen bg-background">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <AuthProvider
