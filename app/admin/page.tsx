@@ -211,29 +211,35 @@ export default function AdminOrdersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Clock className="h-8 w-8 text-muted-foreground" />
+        <Card className="glass card-hover border-border/50">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-muted-foreground/10 flex items-center justify-center shrink-0">
+              <Clock className="h-6 w-6 text-muted-foreground" />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{pendingCount}</p>
+              <p className="text-2xl font-bold font-display">{pendingCount}</p>
               <p className="text-sm text-muted-foreground">Pendientes</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Package className="h-8 w-8 text-primary" />
+        <Card className="glass card-hover border-border/50">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Package className="h-6 w-6 text-primary" />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{preparingCount}</p>
+              <p className="text-2xl font-bold font-display">{preparingCount}</p>
               <p className="text-sm text-muted-foreground">Preparando</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <AlertCircle className="h-8 w-8 text-warning" />
+        <Card className="glass card-hover border-border/50">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-warning/15 flex items-center justify-center shrink-0">
+              <AlertCircle className="h-6 w-6 text-warning" />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{readyCount}</p>
+              <p className="text-2xl font-bold font-display">{readyCount}</p>
               <p className="text-sm text-muted-foreground">Listos</p>
             </div>
           </CardContent>
@@ -256,11 +262,11 @@ export default function AdminOrdersPage() {
             const StatusIcon = status.icon
 
             return (
-              <Card key={order.id}>
+              <Card key={order.id} className="glass card-hover border-border/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-base">
+                      <CardTitle className="text-base font-display">
                         Pedido #{order.id.slice(0, 8)}
                       </CardTitle>
                       <CardDescription>
@@ -281,7 +287,7 @@ export default function AdminOrdersPage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {order.order_items?.length} producto(s) - {formatPrice(order.total)}
+                      {order.order_items?.length} producto(s) - <span className="text-primary font-semibold">{formatPrice(order.total)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" asChild>
@@ -291,17 +297,17 @@ export default function AdminOrdersPage() {
                         </Link>
                       </Button>
                       {order.status === 'pending' && (
-                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                        <Button size="sm" className="rounded-full" onClick={() => updateOrderStatus(order.id, 'preparing')}>
                           Preparar
                         </Button>
                       )}
                       {order.status === 'preparing' && (
-                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'ready')}>
+                        <Button size="sm" className="rounded-full" onClick={() => updateOrderStatus(order.id, 'ready')}>
                           Listo
                         </Button>
                       )}
                       {order.status === 'ready' && (
-                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'completed')}>
+                        <Button size="sm" className="rounded-full" onClick={() => updateOrderStatus(order.id, 'completed')}>
                           Entregar
                         </Button>
                       )}
