@@ -32,7 +32,7 @@
   --border: oklch(0.91 0.010 240);
   --input: oklch(0.95 0.006 240);
   --ring: oklch(0.52 0.19 258);
-  --radius: 1rem;
+  --radius: 1.5rem; /* hyper-rounded, estilo "Midnight Editorial" */
 
   --chart-1: oklch(0.52 0.19 258);
   --chart-2: oklch(0.58 0.20 280);
@@ -56,32 +56,32 @@
   --warning-foreground: oklch(0.16 0.02 250);
 }
 
-/* MODO OSCURO — Azul noche profundo, glassmorphism */
+/* MODO OSCURO — "Midnight Editorial": navy atmosférico + glassmorphism premium */
 .dark {
-  --background: oklch(0.13 0.028 258);
-  --foreground: oklch(0.95 0.008 240);
-  --card: oklch(0.18 0.032 258);
-  --card-foreground: oklch(0.95 0.008 240);
-  --popover: oklch(0.18 0.032 258);
-  --popover-foreground: oklch(0.95 0.008 240);
+  --background: oklch(0.15 0.035 262);
+  --foreground: oklch(0.94 0.014 250);
+  --card: oklch(0.19 0.035 260);
+  --card-foreground: oklch(0.94 0.014 250);
+  --popover: oklch(0.19 0.035 260);
+  --popover-foreground: oklch(0.94 0.014 250);
 
-  --primary: oklch(0.68 0.19 258);
-  --primary-foreground: oklch(0.10 0.02 258);
+  --primary: oklch(0.62 0.22 258);
+  --primary-foreground: oklch(0.99 0.006 250);
 
-  --secondary: oklch(0.26 0.05 250);
-  --secondary-foreground: oklch(0.88 0.04 235);
+  --secondary: oklch(0.27 0.055 255);
+  --secondary-foreground: oklch(0.88 0.05 240);
 
-  --muted: oklch(0.22 0.028 258);
-  --muted-foreground: oklch(0.64 0.02 240);
+  --muted: oklch(0.23 0.030 260);
+  --muted-foreground: oklch(0.66 0.03 245);
 
-  --accent: oklch(0.66 0.20 280);
-  --accent-foreground: oklch(0.10 0.02 258);
+  --accent: oklch(0.62 0.22 292);
+  --accent-foreground: oklch(0.99 0.006 250);
 
   --destructive: oklch(0.52 0.22 25);
   --destructive-foreground: oklch(0.95 0.008 240);
-  --border: oklch(0.28 0.032 258);
-  --input: oklch(0.22 0.028 258);
-  --ring: oklch(0.68 0.19 258);
+  --border: oklch(0.30 0.035 260);
+  --input: oklch(0.23 0.030 260);
+  --ring: oklch(0.62 0.22 258);
 
   --chart-1: oklch(0.68 0.19 258);
   --chart-2: oklch(0.66 0.20 280);
@@ -219,15 +219,29 @@ body {
 /* Glass effect utility — para navbar, cards flotantes, badges */
 .glass {
   background: color-mix(in oklch, var(--card) 88%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid color-mix(in oklch, var(--border) 90%, transparent);
   box-shadow: 0 2px 12px oklch(0.16 0.02 250 / 0.10);
 }
 .dark .glass {
-  background: color-mix(in oklch, var(--card) 72%, transparent);
+  background: color-mix(in oklch, var(--card) 70%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
   box-shadow: none;
+}
+
+/* Price pill — badge de precio flotante sobre la imagen del producto */
+.price-pill {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.375rem 0.625rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px oklch(0.52 0.19 258 / 0.35);
 }
 
 /* Gradiente de texto para títulos destacados */

@@ -79,7 +79,7 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-md card-hover">
+    <Card className="group overflow-hidden rounded-2xl transition-all hover:shadow-md card-hover">
       <CardContent className="p-0">
         {/* Imagen */}
         <div className="relative aspect-square bg-muted p-3">
@@ -88,7 +88,7 @@ export function ProductCard({ product }: { product: Product }) {
               src={effectiveImage}
               alt={product.name}
               fill
-              className="object-contain p-2 transition-transform group-hover:scale-105"
+              className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
               unoptimized
             />
           ) : (
@@ -106,14 +106,16 @@ export function ProductCard({ product }: { product: Product }) {
               Quedan {effectiveStock}
             </Badge>
           )}
+          {/* Precio como pill flotante sobre la imagen */}
+          <span className="price-pill absolute bottom-2 left-2">
+            {formatPrice(effectivePrice)}
+          </span>
         </div>
 
         <div className="p-3 space-y-2">
           <div>
             <h3 className="font-medium line-clamp-2 leading-tight text-sm">{product.name}</h3>
-            <p className="text-sm text-primary font-semibold mt-0.5">
-              {formatPrice(effectivePrice)} / {product.unit}
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">/ {product.unit}</p>
           </div>
 
           {/* Selector de sabores/variantes */}
