@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Package, User, FileText, Store } from 'lucide-react'
+import { Package, User, FileText, Store, Receipt } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CartProvider } from '@/components/cart-context'
 import { Header } from '@/components/header'
@@ -19,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     { href: '/dashboard', label: 'Mis Pedidos', icon: Package },
     { href: '/dashboard/perfil', label: 'Mi Perfil', icon: User },
     { href: '/dashboard/deudas', label: 'Mis Deudas', icon: FileText },
+    { href: '/dashboard/facturas', label: 'Facturas', icon: Receipt },
   ]
 
   return (
