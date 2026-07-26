@@ -42,27 +42,52 @@ function Button({
   variant,
   size,
   asChild = false,
-  loading = false,
+  loading,
   disabled,
   children,
+  onClick,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-    /** Muestra un spinner y bloquea el botón mientras hay una acción en curso (evita doble click / spam). */
+    /**
+     * Forzar el estado de carga desde afuera (útil cuando la acción real
+     * pasa por un <form onSubmit>, no por el onClick de este botón).
+     * Si NO se pasa, el botón se auto-detecta: si el onClick es async
+     * (devuelve una Promise), se pone en loading solo hasta que termina.
+     */
     loading?: boolean
   }) {
   const Comp = asChild ? Slot : 'button'
+  const [autoLoading, setAutoLoading] = React.useState(false)
 
-  // Si asChild=true, el hijo (Link, etc.) no admite que le metamos un spinner
-  // adentro sin romper su estructura, así que ahí solo deshabilitamos el
-  // "click" lógico (pointer-events) sin inyectar el ícono.
+  // Modo automático: no hace falta pasar `loading` a mano en cada botón.
+  // Si el onClick devuelve una Promise, mostramos el spinner mientras esté
+  // pendiente y bloqueamos nuevos clicks hasta que resuelva (éxito o error).
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!onClick) return
+      const result = onClick(event) as unknown
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        setAutoLoading(true)
+        ;(result as Promise<unknown>).finally(() => setAutoLoading(false))
+      }
+    },
+    [onClick],
+  )
+
+  const isLoading = loading ?? autoLoading
+
+  // Si asChild=true, el hijo (Link, etc.) no admite que le metamos un
+  // spinner adentro sin romper su estructura, así que ahí solo bloqueamos
+  // el "click" lógico sin inyectar el ícono.
   if (asChild) {
     return (
       <Comp
         data-slot="button"
-        className={cn(buttonVariants({ variant, size, className }), loading && 'pointer-events-none opacity-70')}
-        aria-busy={loading || undefined}
+        className={cn(buttonVariants({ variant, size, className }), isLoading && 'pointer-events-none opacity-70')}
+        aria-busy={isLoading || undefined}
+        onClick={onClick}
         {...props}
       >
         {children}
@@ -74,11 +99,12 @@ function Button({
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
+      onClick={handleClick}
       {...props}
     >
-      {loading && <Loader2Icon className="animate-spin" aria-hidden="true" />}
+      {isLoading && <Loader2Icon className="animate-spin" aria-hidden="true" />}
       {children}
     </Comp>
   )
