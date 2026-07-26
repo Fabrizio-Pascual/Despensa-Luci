@@ -19,7 +19,7 @@ export default function SearchPage() {
   const supabase = createClient()
 
   const [results, setResults] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!!query)
   const [sort, setSort] = useState<SortOption>('newest')
   const [searchInput, setSearchInput] = useState(query)
   const [showFilters, setShowFilters] = useState(false)
@@ -30,9 +30,7 @@ export default function SearchPage() {
   })
 
   useEffect(() => {
-    if (query) {
-      performSearch()
-    }
+    performSearch()
   }, [query, sort, filters])
 
   const performSearch = async () => {
