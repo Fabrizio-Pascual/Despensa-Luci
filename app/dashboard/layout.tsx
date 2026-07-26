@@ -5,7 +5,9 @@ import { Package, User, FileText, Store, Receipt } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CartProvider } from '@/components/cart-context'
 import { Header } from '@/components/header'
+import { MobileBottomNav } from '@/components/mobile-bottom-nav'
 import { PushSubscriber } from '@/components/push-subscribe'
+import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -52,15 +54,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                   <Store className="h-5 w-5" />
                   Volver a la tienda
                 </Link>
+                <DashboardLogoutButton />
               </nav>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 min-w-0">
+            <main className="flex-1 min-w-0 pb-20 md:pb-0">
               {children}
             </main>
           </div>
         </div>
+        <MobileBottomNav />
       </div>
     </CartProvider>
   )

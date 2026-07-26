@@ -2,9 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
-import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle } from 'lucide-react'
+import { ShoppingCart, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -15,7 +14,6 @@ import type { Category } from '@/lib/types'
 
 export function Header() {
   const { user, profile, loading: authLoading } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { itemCount } = useCart()
   const [mounted, setMounted] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -59,7 +57,7 @@ export function Header() {
 
   return (
     <header className="glass sticky top-0 z-50 w-full border-b-0">
-      <div className="container mx-auto flex h-20 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 md:h-20 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-headline-sm text-foreground">
           <Store className="h-8 w-8 text-primary" />
@@ -90,8 +88,8 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1">
+        {/* Actions (solo desktop: en mobile esto lo reemplaza la barra de abajo) */}
+        <div className="hidden md:flex items-center gap-1">
           {/* Búsqueda de productos */}
           <ProductSearch />
 
@@ -148,7 +146,7 @@ export function Header() {
             </DropdownMenu>
           ) : authLoading ? null : mounted ? (
             <div className="flex items-center gap-1">
-              <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+              <Button asChild variant="ghost" size="sm">
                 <Link href="/auth/login">Ingresar</Link>
               </Button>
               <Button asChild variant="default" size="sm">
@@ -156,93 +154,6 @@ export function Header() {
               </Button>
             </div>
           ) : null}
-
-          {/* Mobile Menu */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] p-0 flex flex-col h-full">
-              <SheetHeader className="sr-only">
-                <SheetTitle>Menú de navegación</SheetTitle>
-                <SheetDescription>Navegación principal de Despensa Luci</SheetDescription>
-              </SheetHeader>
-              {/* Header del menu */}
-              <div className="p-6 border-b bg-primary/5 shrink-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Store className="h-6 w-6 text-primary" />
-                  <span className="font-bold text-lg">Despensa Luci</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Tu despensa de barrio</p>
-              </div>
-              {/* Nav links */}
-              <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0">
-                <Link
-                  href="/"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors font-medium"
-                >
-                  <span className="text-xl">🏠</span>
-                  Inicio
-                </Link>
-                <Link
-                  href="/como-comprar"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors font-medium"
-                >
-                  <HelpCircle className="h-5 w-5" />
-                  Cómo comprar
-                </Link>
-                <p className="px-4 pt-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categorías</p>
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/categorias/${cat.slug}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary transition-colors text-sm"
-                  >
-                    <span className="text-lg">📦</span>
-                    {cat.name}
-                  </Link>
-                ))}
-              </nav>
-              {/* Footer del menu */}
-              {!user && !authLoading && (
-                <div className="shrink-0 p-4 border-t space-y-2 bg-card">
-                  <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">Ingresar</Button>
-                  </Link>
-                  <Link href="/auth/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Registrarse</Button>
-                  </Link>
-                </div>
-              )}
-              {user && (
-                <div className="shrink-0 p-4 border-t bg-card">
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 mb-2">
-                    <Avatar className="h-9 w-9 border border-border">
-                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs font-semibold">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{profile?.full_name || user.email}</p>
-                      <p className="text-xs text-muted-foreground">Mi cuenta</p>
-                    </div>
-                  </div>
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full mb-2">Mis pedidos</Button>
-                  </Link>
-                  <Button variant="ghost" className="w-full text-destructive" onClick={handleSignOut}>
-                    Cerrar sesión
-                  </Button>
-                </div>
-              )}
-            </SheetContent>
-          </Sheet>
         </div>
       </div>
     </header>

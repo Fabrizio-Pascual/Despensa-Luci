@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Search, Package, Plus, X, Loader2 } from 'lucide-react'
@@ -17,7 +17,7 @@ function formatPrice(price: number): string {
 
 type SearchResult = Product & { category: Category | null }
 
-export function ProductSearch() {
+export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () => void) => ReactNode } = {}) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -81,9 +81,13 @@ export function ProductSearch() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} title="Buscar productos (Ctrl+K)">
-        <Search className="h-5 w-5" />
-      </Button>
+      {renderTrigger ? (
+        renderTrigger(() => setOpen(true))
+      ) : (
+        <Button variant="ghost" size="icon" onClick={() => setOpen(true)} title="Buscar productos (Ctrl+K)">
+          <Search className="h-5 w-5" />
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden max-h-[85vh] flex flex-col">
