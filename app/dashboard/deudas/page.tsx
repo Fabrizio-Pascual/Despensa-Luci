@@ -71,7 +71,7 @@ export default function ClienteDeudasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mis Deudas</h1>
+        <h1 className="text-headline-md text-foreground">Mis Deudas</h1>
         <p className="text-muted-foreground">Tu historial de fiados</p>
       </div>
 
@@ -80,7 +80,7 @@ export default function ClienteDeudasPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Pendiente</p>
-            <p className={`text-2xl font-bold ${remaining > 0 ? 'text-destructive' : 'text-green-600'}`}>
+            <p className={`text-2xl font-bold font-display ${remaining > 0 ? 'text-destructive' : 'text-green-600'}`}>
               {formatPrice(remaining)}
             </p>
           </CardContent>
@@ -88,7 +88,7 @@ export default function ClienteDeudasPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total pagado</p>
-            <p className="text-2xl font-bold text-green-600">{formatPrice(totalPaid)}</p>
+            <p className="text-2xl font-bold font-display text-green-600">{formatPrice(totalPaid)}</p>
           </CardContent>
         </Card>
       </div>

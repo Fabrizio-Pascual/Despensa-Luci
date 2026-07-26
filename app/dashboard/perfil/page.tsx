@@ -127,7 +127,7 @@ export default function ProfilePage() {
           />
         )}
         <div>
-          <h1 className="text-2xl font-bold">Mi Perfil</h1>
+          <h1 className="text-headline-md text-foreground">Mi Perfil</h1>
           <p className="text-muted-foreground">Administra tu informacion personal</p>
         </div>
       </div>

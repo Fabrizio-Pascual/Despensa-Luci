@@ -190,7 +190,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Pedido #{order.id.slice(0, 8)}</h1>
+            <h1 className="text-headline-md text-foreground">Pedido #{order.id.slice(0, 8)}</h1>
             <p className="text-muted-foreground">{formatDate(order.created_at)}</p>
           </div>
           <Badge variant={status.variant} className="flex items-center gap-2 text-sm px-3 py-1">
@@ -235,7 +235,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <p className="font-semibold text-primary">Código de retiro</p>
               <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse ml-auto" />
             </div>
-            <p className="text-4xl font-mono font-bold tracking-widest text-center py-2">
+            <p className="text-4xl font-mono font-display font-bold tracking-widest text-center py-2">
               {order.order_code || order.id.slice(0, 6).toUpperCase()}
             </p>
             <p className="text-xs text-center text-muted-foreground mt-1">Mostrá este código al retirar tu pedido</p>

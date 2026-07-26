@@ -27,6 +27,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         {/* Pide permiso de notificaciones y suscribe este navegador/celular
             del CLIENTE a push (antes solo se hacía en /admin). */}
         <PushSubscriber />
+        <div className="mesh-bg" />
         <Header />
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row gap-8">
@@ -37,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-card premium-transition"
                   >
                     <item.icon className="h-5 w-5" />
                     {item.label}
@@ -45,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 ))}
                 <Link
                   href="/"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-card premium-transition"
                 >
                   <Store className="h-5 w-5" />
                   Volver a la tienda
