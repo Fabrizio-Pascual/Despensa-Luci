@@ -1,291 +1,197 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Filter, ArrowUpDown } from 'lucide-react'
+import { ArrowRight, ShoppingBag, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ProductCard } from '@/components/product-card'
-import { Breadcrumbs } from '@/components/breadcrumbs'
-import { createClient } from '@/lib/supabase/client'
-import type { Product } from '@/lib/types'
+import { CategoryCard } from '@/components/category-card'
+import { ProductCarousel } from '@/components/product-carousel'
+import { HeroImage } from '@/components/hero-image'
+import { ReviewsSection } from '@/components/reviews-section'
+import { createClient } from '@/lib/supabase/server'
 
-type SortOption = 'newest' | 'popular' | 'price-asc' | 'price-desc' | 'rating'
+export const revalidate = 60
 
-export default function SearchPage() {
-  const searchParams = useSearchParams()
-  const query = searchParams.get('q') || ''
-  const supabase = createClient()
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  const [results, setResults] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState<SortOption>('newest')
-  const [searchInput, setSearchInput] = useState(query)
-  const [showFilters, setShowFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    minPrice: 0,
-    maxPrice: 1000,
-    inStock: true
-  })
+  const { data: categories } = await supabase
+    .from('categories').select('*').order('display_order', { ascending: true })
 
-  useEffect(() => {
-    if (query) {
-      performSearch()
-    }
-  }, [query, sort, filters])
-
-  const performSearch = async () => {
-    setLoading(true)
-    try {
-      let queryBuilder = supabase
-        .from('products')
-        .select('*, category:categories(name, slug)')
-        .eq('is_active', true)
-
-      // Filtrar por query
-      if (query) {
-        queryBuilder = queryBuilder.or(
-          `name.ilike.%${query}%,description.ilike.%${query}%`
-        )
-      }
-
-      // Filtro de stock
-      if (filters.inStock) {
-        queryBuilder = queryBuilder.gt('stock', 0)
-      }
-
-      // Filtro de precio (aproximado, mejor hacer en el cliente)
-      const { data } = await queryBuilder
-
-      // Filtrar y ordenar en cliente
-      let filtered: Product[] = (data as Product[]) || []
-
-      // Precio
-      filtered = filtered.filter(
-        (p: Product) => p.price >= filters.minPrice && p.price <= filters.maxPrice
-      )
-
-      // Ordenamiento
-      if (sort === 'price-asc') {
-        filtered.sort((a: Product, b: Product) => a.price - b.price)
-      } else if (sort === 'price-desc') {
-        filtered.sort((a: Product, b: Product) => b.price - a.price)
-      } else if (sort === 'newest') {
-        filtered.sort((a: Product, b: Product) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      }
-
-      setResults(filtered)
-    } catch (error) {
-      console.error('Search error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    const params = new URLSearchParams()
-    if (searchInput) params.set('q', searchInput)
-    window.history.replaceState({}, '', `/buscar?${params.toString()}`)
-    setSearchInput(searchInput)
-  }
+  const { data: products } = await supabase
+    .from('products')
+    .select('*, category:categories(name, slug)')
+    .eq('is_active', true).gt('stock', 0).limit(24)
 
   return (
-    <div className="pb-20 md:pb-8">
-      {/* Breadcrumbs */}
-      <div className="container mx-auto px-4 pt-6">
-        <Breadcrumbs
-          items={[
-            { label: 'Búsqueda', href: '/buscar', current: true }
-          ]}
-        />
-      </div>
+    <div className="pb-16">
+      {/* Fondo mesh fijo — atmósfera Midnight Editorial */}
+      <div className="mesh-bg" />
 
-      {/* Header */}
-      <section className="container mx-auto px-4 mb-8">
-        <h1 className="text-3xl font-bold mb-6">Buscar Productos</h1>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-          <Input
-            type="text"
-            placeholder="¿Qué buscas?"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="flex-1 h-11"
-          />
-          <Button type="submit" size="lg" className="gap-2">
-            <Search className="h-4 w-4" />
-            Buscar
-          </Button>
-        </form>
-
-        {/* Resultados Info */}
-        {query && (
-          <p className="text-muted-foreground mb-4">
-            {loading ? 'Buscando...' : `${results.length} resultado${results.length !== 1 ? 's' : ''} para "${query}"`}
-          </p>
-        )}
-      </section>
-
-      {/* Filtros y Resultados */}
-      <section className="container mx-auto px-4">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Filtros (Desktop) */}
-          <div className="hidden lg:block w-64">
-            <div className="glass rounded-lg p-4 border border-border space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filtros
-              </h3>
-
-              {/* Precio */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Rango de Precio
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Min"
-                    value={filters.minPrice}
-                    onChange={(e) =>
-                      setFilters({ ...filters, minPrice: Number(e.target.value) })
-                    }
-                    className="h-9 text-sm"
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Max"
-                    value={filters.maxPrice}
-                    onChange={(e) =>
-                      setFilters({ ...filters, maxPrice: Number(e.target.value) })
-                    }
-                    className="h-9 text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Stock */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filters.inStock}
-                  onChange={(e) =>
-                    setFilters({ ...filters, inStock: e.target.checked })
-                  }
-                  className="rounded"
-                />
-                <span className="text-sm">Solo en Stock</span>
-              </label>
+      {/* HERO */}
+      <section className="relative pt-10 pb-16 md:pt-16 md:pb-24 container mx-auto px-4 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="relative z-10 reveal">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8">
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span>Pedidos online · Retiro en local</span>
+            </div>
+            <h1 className="text-display-lg text-foreground mb-6">
+              La despensa de tu barrio, <span className="text-primary">siempre abierta</span>
+            </h1>
+            <p className="text-body-lg text-muted-foreground max-w-xl mb-10 leading-relaxed">
+              Calidad premium, calidez de barrio. Hacé tu pedido online y retiralo cuando quieras.
+              Los productos más frescos seleccionados para tu mesa.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold shadow-lg shadow-primary/20">
+                <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold border-2">
+                <Link href={user ? '/como-comprar' : '/auth/login'}>{user ? 'Conocenos' : 'Ingresar'}</Link>
+              </Button>
             </div>
           </div>
 
-          {/* Resultados */}
-          <div className="flex-1">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="lg:hidden gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Ordenar:</span>
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortOption)}
-                  className="px-3 py-1 rounded border border-border bg-background text-sm"
-                >
-                  <option value="newest">Más Nuevos</option>
-                  <option value="popular">Popular</option>
-                  <option value="price-asc">Menor Precio</option>
-                  <option value="price-desc">Mayor Precio</option>
-                </select>
-              </div>
+          <div className="relative h-[320px] md:h-[500px] flex items-center justify-center reveal" style={{ animationDelay: '150ms' }}>
+            <div className="absolute inset-0 rounded-[40px] overflow-hidden border border-border/40 shadow-2xl">
+              <HeroImage />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
             </div>
 
-            {/* Mobile Filters */}
-            {showFilters && (
-              <div className="lg:hidden glass rounded-lg p-4 border border-border mb-6 space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Rango de Precio
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Min"
-                      value={filters.minPrice}
-                      onChange={(e) =>
-                        setFilters({ ...filters, minPrice: Number(e.target.value) })
-                      }
-                      className="h-9 text-sm"
-                    />
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Max"
-                      value={filters.maxPrice}
-                      onChange={(e) =>
-                        setFilters({ ...filters, maxPrice: Number(e.target.value) })
-                      }
-                      className="h-9 text-sm"
-                    />
-                  </div>
+            <div className="absolute -top-4 -right-4 glass p-6 rounded-3xl shadow-xl floating-card">
+              <span className="text-primary text-display-lg block leading-none">24hs</span>
+              <span className="text-muted-foreground text-label-bold text-sm">Abierto Siempre</span>
+            </div>
+            <div className="absolute -bottom-8 -left-4 md:-left-8 glass p-5 rounded-3xl shadow-xl floating-card" style={{ animationDelay: '-3s' }}>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+                  <Sparkles className="h-5 w-5" />
                 </div>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.inStock}
-                    onChange={(e) =>
-                      setFilters({ ...filters, inStock: e.target.checked })
-                    }
-                    className="rounded"
-                  />
-                  <span className="text-sm">Solo en Stock</span>
-                </label>
+                <div>
+                  <span className="text-foreground font-bold text-xl block leading-none">{products?.length || 0}+</span>
+                  <span className="text-muted-foreground text-label-sm uppercase">Productos Premium</span>
+                </div>
               </div>
-            )}
-
-            {/* Grid */}
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Cargando...</p>
-              </div>
-            ) : results.length === 0 ? (
-              <div className="glass rounded-lg border border-border p-12 text-center">
-                <Search className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Sin resultados</h2>
-                <p className="text-muted-foreground mb-6">
-                  No encontramos productos que coincidan con tu búsqueda
-                </p>
-                <Button asChild variant="outline">
-                  <Link href="/categorias">Ver Todas las Categorías</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {results.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </section>
+
+      {/* CATEGORÍAS */}
+      <section id="categorias" className="container mx-auto px-4 py-16 md:py-20">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6 reveal">
+          <div>
+            <span className="text-primary text-label-bold uppercase tracking-widest block mb-3">Explorá</span>
+            <h2 className="text-headline-md text-foreground">Categorías Destacadas</h2>
+          </div>
+          <Button variant="ghost" asChild className="hidden md:flex text-muted-foreground hover:text-primary">
+            <Link href="/categorias">Ver todas <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          </Button>
+        </div>
+        {categories && categories.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal-sequential">
+            {categories.slice(0, 8).map((cat) => <CategoryCard key={cat.id} category={cat} />)}
+          </div>
+        ) : (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="text-4xl mb-4">🛒</p>
+            <p>Pronto vas a ver nuestros productos acá.</p>
+          </div>
+        )}
+        <div className="mt-6 md:hidden">
+          <Button variant="outline" className="w-full rounded-xl" asChild>
+            <Link href="/categorias">Ver todas las categorías <ArrowRight className="ml-2 h-4 w-4" /></Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* PRODUCTOS DESTACADOS */}
+      {products && products.length > 0 && (
+        <section className="py-16 md:py-20 bg-card/40 backdrop-blur-sm border-y border-border/40">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 text-center reveal">
+              <h2 className="text-headline-md text-foreground mb-4">Los más pedidos</h2>
+              <div className="h-1.5 w-20 bg-primary mx-auto rounded-full" />
+            </div>
+            <ProductCarousel products={products as any} />
+          </div>
+        </section>
+      )}
+
+      {/* RESEÑAS — componente client que carga desde Supabase */}
+      <ReviewsSection />
+
+      {/* UBICACIÓN — Villa San Nicolás, Malagueño */}
+      <section className="py-16 md:py-20 bg-card/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1 rounded-[32px] overflow-hidden h-72 md:h-[400px] border border-border/40 shadow-2xl grayscale hover:grayscale-0 premium-transition duration-700">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3a!2d-64.4549122429774!3d-31.434700519515722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDI2JzA0LjkiUyA2NMKwMjcnMTcuNyJX!5e0!3m2!1ses!2sar!4v1"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-primary text-label-bold uppercase tracking-widest block mb-3">Dónde estamos</span>
+              <h2 className="text-headline-md text-foreground mb-6">Encontranos en el barrio</h2>
+              <p className="text-body-lg text-muted-foreground mb-8 leading-relaxed">
+                Abiertos todos los días para vos 🧡
+              </p>
+              <div className="space-y-6">
+                <div className="flex gap-4 group">
+                  <div className="w-12 h-12 rounded-2xl bg-card border border-border/40 flex items-center justify-center text-primary group-hover:scale-110 premium-transition shrink-0">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground">Dirección</h4>
+                    <p className="text-muted-foreground">Segundo Dutari Rodríguez 746, Villa San Nicolás, Malagueño, Córdoba</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 group">
+                  <div className="w-12 h-12 rounded-2xl bg-card border border-border/40 flex items-center justify-center text-primary group-hover:scale-110 premium-transition shrink-0">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground">Horarios</h4>
+                    <p className="text-muted-foreground">Todos los días, abierto siempre</p>
+                  </div>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="rounded-xl gap-2 mt-8">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=-31.434700519515722,-64.4549122429774"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Cómo llegar
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA — solo si no está logueado */}
+      {!user && (
+        <section className="container mx-auto px-4 pt-16">
+          <div className="relative overflow-hidden rounded-[32px] bg-primary px-8 py-12 md:px-14 md:py-16 text-center shadow-2xl shadow-primary/20">
+            <div className="relative z-10">
+              <h2 className="text-headline-md text-primary-foreground">¿Primera vez acá?</h2>
+              <p className="mt-3 text-primary-foreground/85 max-w-md mx-auto text-body-lg leading-relaxed">
+                Creá tu cuenta gratis y hacé tu primer pedido en minutos.
+              </p>
+              <Button size="lg" className="mt-8 rounded-xl px-10 bg-white text-primary hover:bg-white/90 shadow-md font-semibold" asChild>
+                <Link href="/auth/sign-up">Crear cuenta gratis</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
