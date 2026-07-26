@@ -76,15 +76,23 @@ export function Footer() {
 
         </div>
 
-        <div className="border-t border-border/40 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-2">
+        <div className="border-t border-border/40 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Despensa Luci. Premium Neighborhood Goods.
           </p>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Mail className="h-3 w-3" />
-            <a href="mailto:fpascual624@gmail.com" className="hover:text-primary premium-transition">
-              fpascual624@gmail.com
-            </a>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <Link href="/terminos" className="hover:text-primary premium-transition">
+              Términos y Condiciones
+            </Link>
+            <Link href="/cookies" className="hover:text-primary premium-transition">
+              Política de Cookies
+            </Link>
+            <div className="flex items-center gap-1">
+              <Mail className="h-3 w-3" />
+              <a href="mailto:fpascual624@gmail.com" className="hover:text-primary premium-transition">
+                fpascual624@gmail.com
+              </a>
+            </div>
           </div>
         </div>
       </div>

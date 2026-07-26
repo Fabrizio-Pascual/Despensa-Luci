@@ -271,7 +271,7 @@ export default function CheckoutPage() {
                 <span className="text-headline-sm text-foreground">Total</span>
                 <span className="text-headline-sm text-primary">{formatPrice(total)}</span>
               </div>
-              <Button className="w-full rounded-xl" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
+              <Button className="w-full rounded-xl" size="lg" onClick={handleSubmit} loading={isSubmitting}>
                 {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-4">

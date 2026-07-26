@@ -25,15 +25,21 @@ export function AddToCartPanel({ product, variants }: { product: Product; varian
   const hasVariants = variants.length > 0
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(hasVariants ? variants[0] : null)
   const [qty, setQty] = useState(1)
+  const [isAdding, setIsAdding] = useState(false)
 
   const effectivePrice = product.price + (selectedVariant?.price_modifier || 0)
   const effectiveStock = hasVariants ? (selectedVariant?.stock || 0) : product.stock
   const isOutOfStock = effectiveStock <= 0
 
-  const handleAdd = () => {
-    if (isOutOfStock) return
-    addToCart(product.id, qty, hasVariants ? selectedVariant?.id || null : null, selectedVariant?.name || null)
-    setQty(1)
+  const handleAdd = async () => {
+    if (isOutOfStock || isAdding) return
+    setIsAdding(true)
+    try {
+      await addToCart(product.id, qty, hasVariants ? selectedVariant?.id || null : null, selectedVariant?.name || null)
+      setQty(1)
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   return (
@@ -78,7 +84,7 @@ export function AddToCartPanel({ product, variants }: { product: Product; varian
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <Button size="lg" className="flex-1 rounded-xl gap-2 text-label-bold" onClick={handleAdd} disabled={isOutOfStock}>
+        <Button size="lg" className="flex-1 rounded-xl gap-2 text-label-bold" onClick={handleAdd} disabled={isOutOfStock} loading={isAdding}>
           <ShoppingCart className="h-4 w-4" />
           Agregar al carrito
         </Button>

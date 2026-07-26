@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { Loader2Icon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -41,19 +42,45 @@ function Button({
   variant,
   size,
   asChild = false,
+  loading = false,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /** Muestra un spinner y bloquea el botón mientras hay una acción en curso (evita doble click / spam). */
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot : 'button'
+
+  // Si asChild=true, el hijo (Link, etc.) no admite que le metamos un spinner
+  // adentro sin romper su estructura, así que ahí solo deshabilitamos el
+  // "click" lógico (pointer-events) sin inyectar el ícono.
+  if (asChild) {
+    return (
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }), loading && 'pointer-events-none opacity-70')}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {children}
+      </Comp>
+    )
+  }
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {loading && <Loader2Icon className="animate-spin" aria-hidden="true" />}
+      {children}
+    </Comp>
   )
 }
 

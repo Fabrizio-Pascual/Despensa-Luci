@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
 import { ServiceWorkerRegister } from '@/components/sw-register'
+import { CookieConsentBanner } from '@/components/cookie-consent-banner'
 import { createClient } from '@/lib/supabase/server'
 import { getUserSafe } from '@/lib/supabase/get-user-safe'
 import './globals.css'
@@ -89,6 +90,7 @@ export default async function RootLayout({
           >
             {children}
             <ServiceWorkerRegister />
+            <CookieConsentBanner />
             <div id="portal-root" />
             <Toaster position="top-center" richColors closeButton duration={3000} />
           </AuthProvider>

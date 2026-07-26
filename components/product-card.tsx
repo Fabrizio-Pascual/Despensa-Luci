@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Minus, Plus, ShoppingCart, Package } from 'lucide-react'
+import { Minus, Plus, ShoppingCart, Package, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/components/cart-context'
@@ -29,6 +29,8 @@ export function ProductCard({ product }: { product: Product }) {
   const [variants, setVariants] = useState<Variant[]>([])
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
   const [justAdded, setJustAdded] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   // Cargar variantes del producto
@@ -62,23 +64,38 @@ export function ProductCard({ product }: { product: Product }) {
   )
   const quantity = cartItem?.quantity || 0
 
-  const handleAdd = () => {
-    if (isOutOfStock) return
+  const handleAdd = async () => {
+    if (isOutOfStock || isAdding) return
     if (hasVariants && !selectedVariant) return
-    addToCart(product.id, 1, variantId, selectedVariant?.name || null)
-    setJustAdded(true)
-    setTimeout(() => setJustAdded(false), 400)
-  }
-
-  const handleIncrement = () => {
-    if (quantity < effectiveStock) {
-      updateQuantity(product.id, quantity + 1, variantId)
+    setIsAdding(true)
+    try {
+      await addToCart(product.id, 1, variantId, selectedVariant?.name || null)
+      setJustAdded(true)
+      setTimeout(() => setJustAdded(false), 400)
+    } finally {
+      setIsAdding(false)
     }
   }
 
-  const handleDecrement = () => {
-    if (quantity > 1) updateQuantity(product.id, quantity - 1, variantId)
-    else removeFromCart(product.id, variantId)
+  const handleIncrement = async () => {
+    if (isUpdating || quantity >= effectiveStock) return
+    setIsUpdating(true)
+    try {
+      await updateQuantity(product.id, quantity + 1, variantId)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDecrement = async () => {
+    if (isUpdating) return
+    setIsUpdating(true)
+    try {
+      if (quantity > 1) await updateQuantity(product.id, quantity - 1, variantId)
+      else await removeFromCart(product.id, variantId)
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   return (
@@ -147,20 +164,20 @@ export function ProductCard({ product }: { product: Product }) {
             <span className={`text-primary text-headline-sm ${justAdded ? 'cart-bump' : ''}`}>{formatPrice(effectivePrice)}</span>
             <button
               onClick={handleAdd}
-              disabled={isOutOfStock}
+              disabled={isOutOfStock || isAdding}
               className="w-10 h-10 bg-secondary/60 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-90 premium-transition disabled:opacity-40 disabled:pointer-events-none"
             >
-              <ShoppingCart className="h-4 w-4" />
+              {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2 pt-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement}>
-              <Minus className="h-3 w-3" />
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement} disabled={isUpdating}>
+              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Minus className="h-3 w-3" />}
             </Button>
             <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={quantity >= effectiveStock}>
-              <Plus className="h-3 w-3" />
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock}>
+              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
             </Button>
           </div>
         )}
