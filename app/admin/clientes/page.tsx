@@ -118,22 +118,22 @@ export default function AdminClientsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Clientes</h1>
+        <h1 className="text-headline-md text-foreground">Clientes</h1>
         <p className="text-muted-foreground">Listado y estadísticas de clientes y administradores</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card><CardContent className="p-6 flex items-center gap-4">
           <div className="rounded-full bg-primary/10 p-3"><Users className="h-6 w-6 text-primary" /></div>
-          <div><p className="text-sm text-muted-foreground">Total clientes</p><p className="text-2xl font-bold">{clients.length}</p></div>
+          <div><p className="text-sm text-muted-foreground">Total clientes</p><p className="text-2xl font-bold font-display">{clients.length}</p></div>
         </CardContent></Card>
         <Card><CardContent className="p-6 flex items-center gap-4">
           <div className="rounded-full bg-green-500/10 p-3"><DollarSign className="h-6 w-6 text-green-500" /></div>
-          <div><p className="text-sm text-muted-foreground">Ingresos totales</p><p className="text-2xl font-bold text-green-600">{formatPrice(totalRevenue)}</p></div>
+          <div><p className="text-sm text-muted-foreground">Ingresos totales</p><p className="text-2xl font-bold font-display text-green-600">{formatPrice(totalRevenue)}</p></div>
         </CardContent></Card>
         <Card><CardContent className="p-6 flex items-center gap-4">
           <div className="rounded-full bg-warning/10 p-3"><ShoppingCart className="h-6 w-6 text-warning" /></div>
-          <div><p className="text-sm text-muted-foreground">Deuda total</p><p className="text-2xl font-bold text-warning">{formatPrice(totalDebt)}</p></div>
+          <div><p className="text-sm text-muted-foreground">Deuda total</p><p className="text-2xl font-bold font-display text-warning">{formatPrice(totalDebt)}</p></div>
         </CardContent></Card>
       </div>
 

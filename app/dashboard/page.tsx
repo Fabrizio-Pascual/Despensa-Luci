@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mis Pedidos</h1>
+        <h1 className="text-headline-md text-foreground">Mis Pedidos</h1>
         <p className="text-muted-foreground">Historial y seguimiento de tus pedidos</p>
       </div>
 
@@ -54,7 +54,7 @@ export default async function DashboardPage() {
 
             return (
               <Link key={order.id} href={`/dashboard/pedidos/${order.id}`}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                <Card className="hover:border-primary/50 premium-transition cursor-pointer card-hover">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>

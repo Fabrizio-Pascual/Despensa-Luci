@@ -217,7 +217,7 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Productos</h1>
+          <h1 className="text-headline-md text-foreground">Productos</h1>
           <p className="text-muted-foreground">Gestioná el catálogo de productos ({products.length})</p>
         </div>
         <div className="flex gap-2">

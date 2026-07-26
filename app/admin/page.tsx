@@ -190,7 +190,7 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Pedidos</h1>
+          <h1 className="text-headline-md text-foreground">Pedidos</h1>
           <p className="text-muted-foreground">Gestiona los pedidos de tus clientes</p>
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>

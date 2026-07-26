@@ -186,7 +186,7 @@ export default function AdminDeudasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Deudas (Fiado)</h1>
+        <h1 className="text-headline-md text-foreground">Deudas (Fiado)</h1>
         <p className="text-muted-foreground">Control de fiados por cliente</p>
       </div>
 
@@ -194,19 +194,19 @@ export default function AdminDeudasPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total pendiente</p>
-            <p className="text-2xl font-bold text-destructive">{formatPrice(totalPendiente)}</p>
+            <p className="text-2xl font-bold font-display text-destructive">{formatPrice(totalPendiente)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Clientes con deuda</p>
-            <p className="text-2xl font-bold">{clientDebts.filter(c => !c.isPaid).length}</p>
+            <p className="text-2xl font-bold font-display">{clientDebts.filter(c => !c.isPaid).length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total cobrado</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold font-display text-green-600">
               {formatPrice(clientDebts.reduce((sum, c) => sum + c.paidAmount, 0))}
             </p>
           </CardContent>

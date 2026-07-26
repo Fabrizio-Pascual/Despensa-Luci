@@ -102,7 +102,7 @@ export default function AdminSalesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Ventas</h1>
+          <h1 className="text-headline-md text-foreground">Ventas</h1>
           <p className="text-muted-foreground">Estadisticas y registro de ventas en tiempo real</p>
         </div>
         <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
@@ -129,7 +129,7 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total ventas</p>
-                <p className="text-2xl font-bold">{formatPrice(totalSales)}</p>
+                <p className="text-2xl font-bold font-display">{formatPrice(totalSales)}</p>
               </div>
             </div>
           </CardContent>
@@ -142,7 +142,7 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Efectivo</p>
-                <p className="text-2xl font-bold">{formatPrice(totalEfectivo)}</p>
+                <p className="text-2xl font-bold font-display">{formatPrice(totalEfectivo)}</p>
               </div>
             </div>
           </CardContent>
@@ -155,7 +155,7 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Debito</p>
-                <p className="text-2xl font-bold">{formatPrice(totalDebito)}</p>
+                <p className="text-2xl font-bold font-display">{formatPrice(totalDebito)}</p>
               </div>
             </div>
           </CardContent>
@@ -168,7 +168,7 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Fiado</p>
-                <p className="text-2xl font-bold">{formatPrice(totalBoucher)}</p>
+                <p className="text-2xl font-bold font-display">{formatPrice(totalBoucher)}</p>
               </div>
             </div>
           </CardContent>

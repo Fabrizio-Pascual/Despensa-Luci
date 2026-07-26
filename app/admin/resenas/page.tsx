@@ -55,7 +55,7 @@ export default function AdminResenasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Reseñas</h1>
+        <h1 className="text-headline-md text-foreground">Reseñas</h1>
         <p className="text-muted-foreground">Moderá los comentarios de tus clientes</p>
       </div>
 
