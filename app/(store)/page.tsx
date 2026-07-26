@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, ShoppingBag, Clock, Sparkles, MapPin } from 'lucide-react'
+import { ArrowRight, ShoppingBag, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CategoryCard } from '@/components/category-card'
 import { ProductCarousel } from '@/components/product-carousel'
@@ -23,100 +23,73 @@ export default async function HomePage() {
 
   return (
     <div className="pb-16">
+      {/* Fondo mesh fijo — atmósfera Midnight Editorial */}
+      <div className="mesh-bg" />
 
       {/* HERO */}
-      <section className="bg-warm-gradient relative overflow-hidden">
-        <HeroImage />
-        <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="relative z-10 hero-entrance">
-              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Pedidos online · Retiro en local</span>
-              </div>
-              <h1 className="font-display text-5xl md:text-6xl font-bold leading-[1.1] text-foreground">
-                La despensa<br />
-                <span className="text-primary">de tu barrio,</span><br />
-                siempre abierta
-              </h1>
-              <p className="mt-5 text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
-                Elegí tus productos, hacé el pedido y retiralo cuando quieras. Sin filas, sin apuros.
-              </p>
-              <div className="flex flex-wrap gap-3 mt-8">
-                <Button size="lg" asChild className="rounded-full px-8 shadow-warm-lg">
-                  <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
-                {!user && (
-                  <Button size="lg" variant="outline" asChild className="rounded-full px-8">
-                    <Link href="/auth/login">Ingresar</Link>
-                  </Button>
-                )}
-              </div>
+      <section className="relative pt-10 pb-16 md:pt-16 md:pb-24 container mx-auto px-4 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="relative z-10 reveal">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8">
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span>Pedidos online · Retiro en local</span>
+            </div>
+            <h1 className="text-display-lg text-foreground mb-6">
+              La despensa de tu barrio, <span className="text-primary">siempre abierta</span>
+            </h1>
+            <p className="text-body-lg text-muted-foreground max-w-xl mb-10 leading-relaxed">
+              Calidad premium, calidez de barrio. Hacé tu pedido online y retiralo cuando quieras.
+              Los productos más frescos seleccionados para tu mesa.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold shadow-lg shadow-primary/20">
+                <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold border-2">
+                <Link href={user ? '/como-comprar' : '/auth/login'}>{user ? 'Conocenos' : 'Ingresar'}</Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative h-[320px] md:h-[500px] flex items-center justify-center reveal" style={{ animationDelay: '150ms' }}>
+            <div className="absolute inset-0 rounded-[40px] overflow-hidden border border-border/40 shadow-2xl">
+              <HeroImage />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
             </div>
 
-            <div className="hidden md:grid grid-cols-2 gap-4 relative z-10 hero-entrance-delay">
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-6 shadow-warm border border-border/60 col-span-2 floating-card">
-                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Abierto 24hs</p>
-                <p className="text-2xl font-bold text-foreground">Hacé tu pedido</p>
-                <p className="text-sm text-muted-foreground mt-1">cuando quieras, desde donde estés</p>
-              </div>
-              <div className="bg-primary/10 rounded-2xl p-5 border border-primary/20 floating-card" style={{ animationDelay: '-2s' }}>
-                <p className="text-3xl font-bold text-primary">{categories?.length || 0}</p>
-                <p className="text-sm font-medium text-foreground mt-1">Categorías</p>
-                <p className="text-xs text-muted-foreground">de productos</p>
-              </div>
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-5 shadow-warm border border-border/60 floating-card" style={{ animationDelay: '-4s' }}>
-                <p className="text-3xl font-bold text-foreground">{products?.length || 0}+</p>
-                <p className="text-sm font-medium text-foreground mt-1">Productos</p>
-                <p className="text-xs text-muted-foreground">disponibles hoy</p>
+            <div className="absolute -top-4 -right-4 glass p-6 rounded-3xl shadow-xl floating-card">
+              <span className="text-primary text-display-lg block leading-none">24hs</span>
+              <span className="text-muted-foreground text-label-bold text-sm">Abierto Siempre</span>
+            </div>
+            <div className="absolute -bottom-8 -left-4 md:-left-8 glass p-5 rounded-3xl shadow-xl floating-card" style={{ animationDelay: '-3s' }}>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-foreground font-bold text-xl block leading-none">{products?.length || 0}+</span>
+                  <span className="text-muted-foreground text-label-sm uppercase">Productos Premium</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {products && products.length > 0 && (
-          <div className="pb-8">
-            <ProductCarousel products={products as any} />
-          </div>
-        )}
-      </section>
-
-      {/* CÓMO FUNCIONA */}
-      <section className="container mx-auto px-4 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { icon: <ShoppingBag className="h-5 w-5 text-primary" />, step: 'Paso 1', title: 'Elegí y pedí', desc: 'Agregá lo que necesitás al carrito y confirmá en segundos.' },
-            { icon: <Clock className="h-5 w-5 text-primary" />, step: 'Paso 2', title: 'Lo preparamos', desc: 'Armamos tu pedido y te avisamos cuando está listo.' },
-            { icon: <span className="text-lg">🏪</span>, step: 'Paso 3', title: 'Retirás sin esperar', desc: 'Venís, mostrás tu código y te llevás todo listo.' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-4 bg-card rounded-2xl p-6 shadow-warm border border-border/60">
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                {item.icon}
-              </div>
-              <div>
-                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">{item.step}</p>
-                <h3 className="font-semibold text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
       {/* CATEGORÍAS */}
-      <section id="categorias" className="container mx-auto px-4 pb-14">
-        <div className="flex items-end justify-between mb-8">
+      <section id="categorias" className="container mx-auto px-4 py-16 md:py-20">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6 reveal">
           <div>
-            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Nuestros productos</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">¿Qué necesitás hoy?</h2>
+            <span className="text-primary text-label-bold uppercase tracking-widest block mb-3">Explorá</span>
+            <h2 className="text-headline-md text-foreground">Categorías Destacadas</h2>
           </div>
-          <Button variant="ghost" asChild className="hidden md:flex text-primary hover:text-primary">
-            <Link href="/categorias">Ver todo <ArrowRight className="ml-1 h-4 w-4" /></Link>
+          <Button variant="ghost" asChild className="hidden md:flex text-muted-foreground hover:text-primary">
+            <Link href="/categorias">Ver todas <ArrowRight className="ml-1 h-4 w-4" /></Link>
           </Button>
         </div>
         {categories && categories.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories.map((cat) => <CategoryCard key={cat.id} category={cat} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal-sequential">
+            {categories.slice(0, 8).map((cat) => <CategoryCard key={cat.id} category={cat} />)}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground">
@@ -125,65 +98,94 @@ export default async function HomePage() {
           </div>
         )}
         <div className="mt-6 md:hidden">
-          <Button variant="outline" className="w-full rounded-full" asChild>
+          <Button variant="outline" className="w-full rounded-xl" asChild>
             <Link href="/categorias">Ver todas las categorías <ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         </div>
       </section>
 
+      {/* PRODUCTOS DESTACADOS */}
+      {products && products.length > 0 && (
+        <section className="py-16 md:py-20 bg-card/40 backdrop-blur-sm border-y border-border/40">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 text-center reveal">
+              <h2 className="text-headline-md text-foreground mb-4">Los más pedidos</h2>
+              <div className="h-1.5 w-20 bg-primary mx-auto rounded-full" />
+            </div>
+            <ProductCarousel products={products as any} />
+          </div>
+        </section>
+      )}
+
       {/* RESEÑAS — componente client que carga desde Supabase */}
       <ReviewsSection />
 
       {/* UBICACIÓN — Villa San Nicolás, Malagueño */}
-      <section className="container mx-auto px-4 pb-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-          <div>
-            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Dónde estamos</p>
-            <h2 className="font-display text-3xl font-bold text-foreground mb-3">Encontranos en el barrio</h2>
-            <p className="text-muted-foreground mb-2">
-              <span className="font-medium">Segundo Dutari Rodríguez 746</span><br />
-              Villa San Nicolás, Malagueño, Córdoba
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">Abiertos todos los días para vos 🧡</p>
-            <Button asChild variant="outline" className="rounded-full gap-2">
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=-31.434700519515722,-64.4549122429774"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MapPin className="h-4 w-4 text-primary" />
-                Cómo llegar
-              </a>
-            </Button>
-          </div>
-          <div className="rounded-2xl overflow-hidden shadow-warm-lg border border-border/60 h-64">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3a!2d-64.4549122429774!3d-31.434700519515722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDI2JzA0LjkiUyA2NMKwMjcnMTcuNyJX!5e0!3m2!1ses!2sar!4v1"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+      <section className="py-16 md:py-20 bg-card/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1 rounded-[32px] overflow-hidden h-72 md:h-[400px] border border-border/40 shadow-2xl grayscale hover:grayscale-0 premium-transition duration-700">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3a!2d-64.4549122429774!3d-31.434700519515722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDI2JzA0LjkiUyA2NMKwMjcnMTcuNyJX!5e0!3m2!1ses!2sar!4v1"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-primary text-label-bold uppercase tracking-widest block mb-3">Dónde estamos</span>
+              <h2 className="text-headline-md text-foreground mb-6">Encontranos en el barrio</h2>
+              <p className="text-body-lg text-muted-foreground mb-8 leading-relaxed">
+                Abiertos todos los días para vos 🧡
+              </p>
+              <div className="space-y-6">
+                <div className="flex gap-4 group">
+                  <div className="w-12 h-12 rounded-2xl bg-card border border-border/40 flex items-center justify-center text-primary group-hover:scale-110 premium-transition shrink-0">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground">Dirección</h4>
+                    <p className="text-muted-foreground">Segundo Dutari Rodríguez 746, Villa San Nicolás, Malagueño, Córdoba</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 group">
+                  <div className="w-12 h-12 rounded-2xl bg-card border border-border/40 flex items-center justify-center text-primary group-hover:scale-110 premium-transition shrink-0">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground">Horarios</h4>
+                    <p className="text-muted-foreground">Todos los días, abierto siempre</p>
+                  </div>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="rounded-xl gap-2 mt-8">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=-31.434700519515722,-64.4549122429774"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Cómo llegar
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA — solo si no está logueado */}
       {!user && (
-        <section className="container mx-auto px-4">
-          <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-12 md:px-14 md:py-16 text-center shadow-warm-lg">
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="absolute -top-8 -left-8 text-[180px] opacity-[0.08]">🧡</div>
-              <div className="absolute -bottom-8 -right-8 text-[180px] opacity-[0.08]">🛒</div>
-            </div>
+        <section className="container mx-auto px-4 pt-16">
+          <div className="relative overflow-hidden rounded-[32px] bg-primary px-8 py-12 md:px-14 md:py-16 text-center shadow-2xl shadow-primary/20">
             <div className="relative z-10">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground">¿Primera vez acá?</h2>
-              <p className="mt-3 text-primary-foreground/85 max-w-md mx-auto text-base leading-relaxed">
+              <h2 className="text-headline-md text-primary-foreground">¿Primera vez acá?</h2>
+              <p className="mt-3 text-primary-foreground/85 max-w-md mx-auto text-body-lg leading-relaxed">
                 Creá tu cuenta gratis y hacé tu primer pedido en minutos.
               </p>
-              <Button size="lg" className="mt-8 rounded-full px-10 bg-white text-primary hover:bg-white/90 shadow-md font-semibold" asChild>
+              <Button size="lg" className="mt-8 rounded-xl px-10 bg-white text-primary hover:bg-white/90 shadow-md font-semibold" asChild>
                 <Link href="/auth/sign-up">Crear cuenta gratis</Link>
               </Button>
             </div>

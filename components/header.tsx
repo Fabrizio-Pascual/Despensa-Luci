@@ -64,20 +64,20 @@ export function Header() {
 
   return (
     <header className="glass sticky top-0 z-50 w-full border-b-0">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-20 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 text-headline-sm text-foreground">
           <Store className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-foreground">Despensa Luci</span>
+          <span className="font-display font-bold">Despensa Luci</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+        <nav className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-primary font-bold border-b-2 border-primary pb-1 text-label-bold premium-transition">
             Inicio
           </Link>
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none">
+            <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold outline-none">
               Categorías <ChevronDown className="h-3.5 w-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto w-56">
@@ -90,22 +90,22 @@ export function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/como-comprar" className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/como-comprar" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
             <HelpCircle className="h-4 w-4" /> Cómo comprar
           </Link>
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Búsqueda de productos */}
           <ProductSearch />
 
           {/* Cart */}
           <CartSheet>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary/50">
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium">
+                <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}

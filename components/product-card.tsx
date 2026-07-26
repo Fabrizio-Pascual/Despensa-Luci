@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { Minus, Plus, ShoppingCart, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/components/cart-context'
 import { createClient } from '@/lib/supabase/client'
@@ -82,84 +81,87 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <Card className="group overflow-hidden rounded-2xl transition-all hover:shadow-md card-hover">
-      <CardContent className="p-0">
-        {/* Imagen */}
-        <div className="relative aspect-square bg-muted p-3">
-          {effectiveImage ? (
-            <Image
-              src={effectiveImage}
-              alt={product.name}
-              fill
-              className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-              unoptimized
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center">
-              <Package className="h-12 w-12 text-muted-foreground/50" />
-            </div>
-          )}
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Badge variant="destructive">Sin stock</Badge>
-            </div>
-          )}
-          {!isOutOfStock && effectiveStock <= 5 && (
-            <Badge className="absolute top-2 right-2 bg-warning text-warning-foreground">
-              Quedan {effectiveStock}
-            </Badge>
-          )}
-          {/* Precio como pill flotante sobre la imagen */}
-          <span className={`price-pill absolute bottom-2 left-2 ${justAdded ? 'cart-bump' : ''}`}>
-            {formatPrice(effectivePrice)}
-          </span>
-        </div>
-
-        <div className="p-3 space-y-2">
-          <div>
-            <h3 className="font-medium line-clamp-2 leading-tight text-sm">{product.name}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">/ {product.unit}</p>
+    <div className="bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
+      {/* Imagen */}
+      <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted">
+        {effectiveImage ? (
+          <Image
+            src={effectiveImage}
+            alt={product.name}
+            fill
+            className="object-contain p-4 premium-transition group-hover:scale-110"
+            unoptimized
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center">
+            <Package className="h-12 w-12 text-muted-foreground/50" />
           </div>
+        )}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <Badge variant="destructive">Sin stock</Badge>
+          </div>
+        )}
+        {!isOutOfStock && effectiveStock <= 5 && (
+          <span className="absolute top-2 right-2 bg-warning text-warning-foreground text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-tighter">
+            Quedan {effectiveStock}
+          </span>
+        )}
+      </div>
 
-          {/* Selector de sabores/variantes */}
-          {hasVariants && (
-            <div className="flex flex-wrap gap-1">
-              {variants.map(variant => (
-                <button
-                  key={variant.id}
-                  onClick={() => setSelectedVariant(variant)}
-                  disabled={variant.stock <= 0}
-                  className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                    selectedVariant?.id === variant.id
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-foreground border-border hover:border-primary'
-                  } ${variant.stock <= 0 ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
-                >
-                  {variant.name}
-                </button>
-              ))}
-            </div>
+      <div className="px-1 space-y-3">
+        <div>
+          {product.category?.name && (
+            <span className="text-muted-foreground text-xs text-label-bold uppercase">{product.category.name}</span>
           )}
-
-          {/* Botón agregar */}
-          {quantity === 0 ? (
-            <Button className="w-full" size="sm" onClick={handleAdd} disabled={isOutOfStock}>
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Agregar
-            </Button>
-          ) : (
-            <div className="flex items-center justify-between gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDecrement}>
-                <Minus className="h-3 w-3" />
-              </Button>
-              <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleIncrement} disabled={quantity >= effectiveStock}>
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
+          <h4 className="text-body-md font-bold text-foreground mt-1 line-clamp-2 leading-tight">{product.name}</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">/ {product.unit}</p>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Selector de sabores/variantes */}
+        {hasVariants && (
+          <div className="flex flex-wrap gap-1">
+            {variants.map(variant => (
+              <button
+                key={variant.id}
+                onClick={() => setSelectedVariant(variant)}
+                disabled={variant.stock <= 0}
+                className={`text-xs px-2 py-1 rounded-full border premium-transition ${
+                  selectedVariant?.id === variant.id
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-foreground border-border hover:border-primary'
+                } ${variant.stock <= 0 ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
+              >
+                {variant.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Precio + acción */}
+        {quantity === 0 ? (
+          <div className="flex justify-between items-center pt-2">
+            <span className={`text-primary text-headline-sm ${justAdded ? 'cart-bump' : ''}`}>{formatPrice(effectivePrice)}</span>
+            <button
+              onClick={handleAdd}
+              disabled={isOutOfStock}
+              className="w-10 h-10 bg-secondary/60 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-90 premium-transition disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={quantity >= effectiveStock}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

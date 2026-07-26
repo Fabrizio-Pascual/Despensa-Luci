@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingBasket } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import type { Category } from '@/lib/types'
 
 // Category icons mapping
@@ -27,31 +26,27 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
   return (
     <Link href={`/categorias/${category.slug}`}>
-      <Card className="group overflow-hidden card-hover hover:border-primary/50">
-        <CardContent className="p-0">
-          <div className="relative aspect-[4/3] bg-muted">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={category.name}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-secondary">
-                <ShoppingBasket className="h-16 w-16 text-secondary-foreground/50" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="text-lg font-semibold text-white">{category.name}</h3>
-              {category.description && (
-                <p className="text-sm text-white/80 line-clamp-1">{category.description}</p>
-              )}
-            </div>
+      <div className="group relative h-80 rounded-[24px] overflow-hidden border border-border/40 card-hover cursor-pointer">
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={category.name}
+            fill
+            className="object-cover premium-transition group-hover:scale-110"
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center bg-secondary">
+            <ShoppingBasket className="h-16 w-16 text-secondary-foreground/50" />
           </div>
-        </CardContent>
-      </Card>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent premium-transition" />
+        <div className="absolute bottom-0 left-0 p-6">
+          <h3 className="text-headline-sm text-foreground mb-2">{category.name}</h3>
+          {category.description && (
+            <p className="text-sm text-muted-foreground line-clamp-1">{category.description}</p>
+          )}
+        </div>
+      </div>
     </Link>
   )
 }
