@@ -2,20 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { Store } from 'lucide-react'
 
 /**
- * Barra de carga global (arriba de la pantalla), con la temática de la
- * marca (gradiente primary -> accent). Se activa sola con cualquier click
- * en un <a>/<Link> interno de la app -sin tener que tocar cada botón o
- * link uno por uno- y se completa cuando la navegación termina (cambia el
- * pathname). Así el usuario siempre ve que "algo está pasando" al navegar
- * entre páginas, no solo al enviar datos.
+ * Pantalla de carga a pantalla completa con la identidad de Despensa Luci.
+ * Se activa sola con cualquier click en un <a>/<Link> interno de la app
+ * -sin tocar cada botón/link uno por uno- y se cierra cuando la navegación
+ * termina (cambia el pathname). Así el usuario siempre ve que "se está
+ * enviando/cargando algo" al moverse entre pantallas.
  */
 export function RouteLoadingBar() {
   const pathname = usePathname()
   const [visible, setVisible] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [closing, setClosing] = useState(false)
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeRef = useRef(false)
 
@@ -51,29 +50,22 @@ export function RouteLoadingBar() {
     if (activeRef.current) return
     activeRef.current = true
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    setClosing(false)
     setVisible(true)
-    setProgress(12)
-    let current = 12
-    intervalRef.current = setInterval(() => {
-      // Avanza rápido al principio y se frena cerca del final, como si
-      // fuera cargando de verdad, hasta que la navegación cierre el ciclo.
-      current = Math.min(current + Math.random() * 8, 88)
-      setProgress(current)
-    }, 180)
   }
 
   function finish() {
-    if (intervalRef.current) clearInterval(intervalRef.current)
     if (!activeRef.current) return
-    setProgress(100)
+    // Transición corta de salida (fade) en vez de un corte seco.
+    setClosing(true)
     hideTimeoutRef.current = setTimeout(() => {
       setVisible(false)
-      setProgress(0)
+      setClosing(false)
       activeRef.current = false
-    }, 220)
+    }, 180)
   }
 
-  // Cuando cambia la ruta, la navegación terminó: completamos y ocultamos.
+  // Cuando cambia la ruta, la navegación terminó: cerramos la pantalla de carga.
   useEffect(() => {
     finish()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,7 +73,6 @@ export function RouteLoadingBar() {
 
   useEffect(() => {
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
     }
   }, [])
@@ -90,13 +81,18 @@ export function RouteLoadingBar() {
 
   return (
     <div
-      aria-hidden="true"
-      className="fixed top-0 left-0 right-0 z-[200] h-[3px] bg-transparent pointer-events-none"
+      role="status"
+      aria-label="Cargando"
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4 glass transition-opacity duration-200 ${
+        closing ? 'opacity-0' : 'opacity-100'
+      }`}
     >
-      <div
-        className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-[width] duration-200 ease-out"
-        style={{ width: `${progress}%`, boxShadow: '0 0 8px var(--color-primary)' }}
-      />
+      <div className="relative flex h-16 w-16 items-center justify-center">
+        <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-accent opacity-90 animate-pulse" />
+        <span className="absolute inset-0 rounded-2xl border-2 border-primary/40 border-t-primary animate-spin" />
+        <Store className="relative h-7 w-7 text-primary-foreground" />
+      </div>
+      <p className="text-sm font-medium text-muted-foreground tracking-wide">Cargando…</p>
     </div>
   )
 }
