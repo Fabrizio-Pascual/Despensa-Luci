@@ -88,3 +88,42 @@ export interface Debt {
   profile?: Profile
   order?: Order
 }
+
+export interface Favorite {
+  id: string
+  user_id: string
+  product_id: string
+  created_at: string
+  product?: Product
+}
+
+export interface LoyaltyPoints {
+  id: string
+  user_id: string
+  points_balance: number
+  total_points_earned: number
+  total_points_used: number
+  created_at: string
+  updated_at: string
+}
+
+export interface StockNotification {
+  id: string
+  user_id: string
+  product_id: string
+  notified: boolean
+  created_at: string
+  notified_at: string | null
+  product?: Product
+}
+
+export interface FlashSale {
+  id: string
+  product_id: string
+  discount_percent: number
+  starts_at: string
+  ends_at: string
+  is_active: boolean
+  created_at: string
+  product?: Product
+}
