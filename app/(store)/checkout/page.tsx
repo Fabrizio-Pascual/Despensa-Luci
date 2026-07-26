@@ -6,12 +6,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CreditCard, Banknote, FileText, Minus, Plus, Package, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { useCart } from '@/components/cart-context'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -120,93 +118,94 @@ export default function CheckoutPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-lg mx-auto text-center py-16">
         <Package className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Tu carrito está vacío</h1>
+        <h1 className="text-headline-md text-foreground mb-2">Tu carrito está vacío</h1>
         <p className="text-muted-foreground mb-6">Agregá productos para hacer tu pedido</p>
-        <Button asChild><Link href="/">Ver productos</Link></Button>
+        <Button className="rounded-xl" asChild><Link href="/">Ver productos</Link></Button>
       </div>
     </div>
   )
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button variant="ghost" size="sm" asChild className="mb-6">
-        <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Seguir comprando</Link>
-      </Button>
-      <h1 className="text-3xl font-bold mb-8">Finalizar pedido</h1>
+    <div className="pb-16">
+      <div className="mesh-bg" />
+      <div className="container mx-auto px-4 py-8">
+        <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2">
+          <Link href="/carrito"><ArrowLeft className="mr-2 h-4 w-4" />Volver al carrito</Link>
+        </Button>
+        <h1 className="text-display-lg text-foreground mb-8">Finalizar Compra</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader><CardTitle>Tu carrito ({items.length} productos)</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {items.map((item) => {
-                const variantId = item.variant_id || null
-                return (
-                  <div key={item.id} className="flex gap-4 py-4 border-b last:border-0">
-                    <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                      {item.product.image_url ? (
-                        <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center">
-                          <Package className="h-8 w-8 text-muted-foreground/50" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-[24px] bg-card border border-border/40 p-6">
+              <h2 className="text-headline-sm text-foreground mb-5">Tu carrito ({items.length} productos)</h2>
+              <div className="space-y-4">
+                {items.map((item) => {
+                  const variantId = item.variant_id || null
+                  return (
+                    <div key={item.id} className="flex gap-4 py-4 border-b border-border/40 last:border-0 last:pb-0">
+                      <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-muted shrink-0">
+                        {item.product.image_url ? (
+                          <Image src={item.product.image_url} alt={item.product.name} fill className="object-contain p-1" unoptimized />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <Package className="h-8 w-8 text-muted-foreground/50" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-foreground">
+                          {item.product.name}
+                          {item.variant_name && <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-3 bg-secondary/60 rounded-full px-3 py-1">
+                            <button className="text-primary hover:text-primary/70 premium-transition active:scale-90" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
+                            <button className="text-primary hover:text-primary/70 premium-transition active:scale-90 disabled:opacity-40 disabled:pointer-events-none" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto rounded-full text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.product_id, variantId)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium">
-                        {item.product.name}
-                        {item.variant_name && <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex items-center gap-3 bg-muted rounded-full px-3 py-1">
-                          <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
-                          <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150 disabled:opacity-40 disabled:pointer-events-none" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto text-muted-foreground hover:text-destructive transition-colors" onClick={() => removeFromCart(item.product_id, variantId)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{formatPrice(item.product.price * item.quantity)}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary">{formatPrice(item.product.price * item.quantity)}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
+                  )
+                })}
+              </div>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas del pedido</CardTitle>
-              <CardDescription>Agregá instrucciones especiales</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea placeholder="Ej: Quiero las gaseosas bien frías..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-            </CardContent>
-          </Card>
-        </div>
+            <div className="rounded-[24px] bg-card border border-border/40 p-6">
+              <h2 className="text-headline-sm text-foreground mb-1">Notas del pedido</h2>
+              <p className="text-sm text-muted-foreground mb-4">Agregá instrucciones especiales</p>
+              <Textarea
+                placeholder="Ej: Quiero las gaseosas bien frías..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="rounded-xl bg-background"
+              />
+            </div>
+          </div>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Método de pago</CardTitle>
-              <CardDescription>Pagás cuando retirés tu pedido</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
-                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'efectivo' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
+          <div className="space-y-6">
+            <div className="rounded-[24px] bg-card border border-border/40 p-6">
+              <h2 className="text-headline-sm text-foreground mb-1">Método de Pago</h2>
+              <p className="text-sm text-muted-foreground mb-4">Pagás cuando retirés tu pedido</p>
+              <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)} className="space-y-3">
+                <div className={`flex items-center space-x-3 p-4 rounded-2xl border premium-transition cursor-pointer ${paymentMethod === 'efectivo' ? 'border-primary bg-primary/10' : 'border-border/40 hover:bg-secondary/40'}`}>
                   <RadioGroupItem value="efectivo" id="efectivo" />
                   <Label htmlFor="efectivo" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <Banknote className="h-5 w-5 text-green-600" />
+                    <Banknote className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">Efectivo</p>
+                      <p className="font-medium text-foreground">Efectivo</p>
                       <p className="text-sm text-muted-foreground">Pagás en el local</p>
                     </div>
                   </Label>
@@ -214,22 +213,22 @@ export default function CheckoutPage() {
 
                 {paymentMethod === 'efectivo' && (
                   <div className="ml-6 space-y-2 pb-1">
-                    <Label className="text-sm">¿Con cuánto vas a pagar?</Label>
+                    <Label className="text-sm text-foreground">¿Con cuánto vas a pagar?</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                      <Input type="number" className="pl-7" placeholder={total.toString()} value={cashAmount} onChange={e => setCashAmount(e.target.value)} />
+                      <Input type="number" className="pl-7 rounded-xl bg-background" placeholder={total.toString()} value={cashAmount} onChange={e => setCashAmount(e.target.value)} />
                     </div>
                     {cashNum > 0 && !sinCambio && (
-                      <div className={`rounded-lg p-3 text-sm ${cambioAlto ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' : 'bg-green-50 border border-green-200 dark:bg-green-950/30 dark:border-green-800'}`}>
+                      <div className={`rounded-xl p-3 text-sm ${cambioAlto ? 'bg-amber-950/30 border border-amber-800' : 'bg-primary/10 border border-primary/30'}`}>
                         {cambioAlto ? (
-                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                          <div className="flex items-center gap-2 text-amber-400">
                             <AlertCircle className="h-4 w-4" />
                             <span>Vuelto: <strong>{formatPrice(cambio)}</strong>. Es un monto alto, te vamos a confirmar si hay cambio disponible.</span>
                           </div>
                         ) : cambio > 0 ? (
-                          <p className="text-green-700 dark:text-green-400">Vuelto: <strong>{formatPrice(cambio)}</strong></p>
+                          <p className="text-primary">Vuelto: <strong>{formatPrice(cambio)}</strong></p>
                         ) : (
-                          <p className="text-green-700 dark:text-green-400">✓ Monto exacto</p>
+                          <p className="text-primary">✓ Monto exacto</p>
                         )}
                       </div>
                     )}
@@ -237,52 +236,49 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'debito' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
+                <div className={`flex items-center space-x-3 p-4 rounded-2xl border premium-transition cursor-pointer ${paymentMethod === 'debito' ? 'border-primary bg-primary/10' : 'border-border/40 hover:bg-secondary/40'}`}>
                   <RadioGroupItem value="debito" id="debito" />
                   <Label htmlFor="debito" className="flex items-center gap-3 cursor-pointer flex-1">
                     <CreditCard className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">Débito</p>
+                      <p className="font-medium text-foreground">Débito</p>
                       <p className="text-sm text-muted-foreground">Tarjeta de débito en el local</p>
                     </div>
                   </Label>
                 </div>
 
-                <div className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${paymentMethod === 'boucher' ? 'border-primary bg-primary/5 shadow-warm' : 'hover:bg-muted/50'}`}>
+                <div className={`flex items-center space-x-3 p-4 rounded-2xl border premium-transition cursor-pointer ${paymentMethod === 'boucher' ? 'border-primary bg-primary/10' : 'border-border/40 hover:bg-secondary/40'}`}>
                   <RadioGroupItem value="boucher" id="boucher" />
                   <Label htmlFor="boucher" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <FileText className="h-5 w-5 text-yellow-600" />
+                    <FileText className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">Fiado</p>
+                      <p className="font-medium text-foreground">Fiado</p>
                       <p className="text-sm text-muted-foreground">Pagás después</p>
                     </div>
                   </Label>
                 </div>
               </RadioGroup>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader><CardTitle>Resumen</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
+            <div className="glass rounded-[24px] p-6">
+              <h2 className="text-headline-sm text-foreground mb-4">Resumen</h2>
+              <div className="flex justify-between text-sm mb-3">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatPrice(total)}</span>
+                <span className="text-foreground">{formatPrice(total)}</span>
               </div>
-              <Separator />
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span className="text-primary">{formatPrice(total)}</span>
+              <div className="h-px bg-border/60 mb-3" />
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-headline-sm text-foreground">Total</span>
+                <span className="text-headline-sm text-primary">{formatPrice(total)}</span>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full rounded-full shadow-warm-lg" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? 'Procesando...' : 'Confirmar pedido'}
+              <Button className="w-full rounded-xl" size="lg" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
               </Button>
-            </CardFooter>
-          </Card>
-
-          <p className="text-sm text-muted-foreground text-center">Te notificaremos cuando tu pedido esté listo para retirar 🧡</p>
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                Te notificaremos cuando tu pedido esté listo para retirar 🧡
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

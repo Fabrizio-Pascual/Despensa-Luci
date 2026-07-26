@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Minus, Plus, ShoppingCart, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -83,7 +84,7 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
       {/* Imagen */}
-      <div className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted">
+      <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted block">
         {effectiveImage ? (
           <Image
             src={effectiveImage}
@@ -107,14 +108,16 @@ export function ProductCard({ product }: { product: Product }) {
             Quedan {effectiveStock}
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="px-1 space-y-3">
         <div>
           {product.category?.name && (
             <span className="text-muted-foreground text-xs text-label-bold uppercase">{product.category.name}</span>
           )}
-          <h4 className="text-body-md font-bold text-foreground mt-1 line-clamp-2 leading-tight">{product.name}</h4>
+          <Link href={`/producto/${product.id}`}>
+            <h4 className="text-body-md font-bold text-foreground mt-1 line-clamp-2 leading-tight hover:text-primary premium-transition">{product.name}</h4>
+          </Link>
           <p className="text-xs text-muted-foreground mt-0.5">/ {product.unit}</p>
         </div>
 

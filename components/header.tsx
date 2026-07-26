@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
-import { CartSheet } from '@/components/cart-sheet'
 import { ProductSearch } from '@/components/product-search'
 import type { Category } from '@/lib/types'
 
@@ -100,17 +99,17 @@ export function Header() {
           {/* Búsqueda de productos */}
           <ProductSearch />
 
-          {/* Cart */}
-          <CartSheet>
-            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary/50">
+          {/* Carrito — página completa */}
+          <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary/50" asChild>
+            <Link href="/carrito">
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
                 <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
-            </Button>
-          </CartSheet>
+            </Link>
+          </Button>
 
           {/* User Menu */}
           {user ? (
