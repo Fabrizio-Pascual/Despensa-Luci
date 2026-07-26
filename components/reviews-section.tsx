@@ -77,7 +77,6 @@ export function ReviewsSection() {
       setComment('')
       setRating(5)
     } catch (error) {
-      console.error('Error al enviar reseña:', error)
       toast.error('Error al enviar la reseña')
     } finally {
       setSubmitting(false)

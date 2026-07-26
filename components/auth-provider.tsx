@@ -63,11 +63,9 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
   const isFirstEventRef = useRef(true)
 
   useEffect(() => {
-    console.log('[auth] AuthProvider montado, suscribiendo a onAuthStateChange')
     let active = true
 
     const loadProfile = async (userId: string) => {
-      console.log('[auth] pidiendo profile de', userId)
       try {
         // Esta consulta a veces se queda colgada (ni error ni respuesta),
         // y si no le ponemos un límite, el resto de la app se queda
@@ -80,9 +78,7 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
             setTimeout(() => resolve({ data: null, error: new Error('profile_timeout') }), 6000)
           ),
         ])
-        console.log('[auth] respuesta profile:', result)
         if (result.error) {
-          console.error('[auth] error/timeout cargando profile:', result.error.message)
           // No pisamos un perfil válido que ya teníamos por un error puntual.
           return
         }
@@ -91,7 +87,7 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
           currentProfileIdRef.current = (result.data as Profile | null)?.id ?? null
         }
       } catch (e) {
-        console.error('[auth] excepción cargando profile:', e instanceof Error ? e.message : e)
+        // Error silencioso: nos quedamos con el perfil que ya teníamos.
       }
     }
 
@@ -101,7 +97,6 @@ export function AuthProvider({ children, initialUser = null, initialProfile = nu
     // inicial. Si más adelante el token vence, Supabase lo renueva solo
     // y dispara otro evento acá mismo.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
-      console.log('[auth] onAuthStateChange:', _event, 'user:', session?.user?.id ?? null)
       if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) {

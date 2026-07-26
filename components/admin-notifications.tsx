@@ -71,7 +71,6 @@ function playNewOrderBeep() {
       osc.stop(start + dur + 0.02)
     })
   } catch (e) {
-    console.error('[notif] no se pudo reproducir el sonido:', e)
   }
 }
 
@@ -95,7 +94,6 @@ export function AdminNotifications() {
       .limit(50)
 
     if (error) {
-      console.error('[notif] error cargando notificaciones:', error.message)
       return
     }
 

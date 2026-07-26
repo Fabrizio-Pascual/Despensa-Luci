@@ -29,12 +29,8 @@ export function Header() {
     // todavía se está confirmando, corre el riesgo de pedirse una sola vez
     // con el estado equivocado y quedarse así (no hay reintento).
     if (authLoading) return
-    console.log('[header] Header montado, arrancando efecto de categorias')
     const loadCategories = async () => {
-      console.log('[header] pidiendo categorias')
-      const { data, error } = await supabase.from('categories').select('*').order('display_order')
-      console.log('[header] respuesta categorias:', data?.length, error)
-      if (error) console.error('[header] error cargando categorias:', error.message, error.code, error.details)
+      const { data } = await supabase.from('categories').select('*').order('display_order')
       setCategories(data || [])
     }
     loadCategories()
@@ -55,7 +51,7 @@ export function Header() {
         new Promise((resolve) => setTimeout(resolve, 3000)),
       ])
     } catch (error) {
-      console.error('Error al cerrar sesión:', error)
+      // Error silencioso: igual redirigimos al inicio
     } finally {
       window.location.href = '/'
     }

@@ -33,7 +33,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
 
   const refreshCart = useCallback(async () => {
-    console.log('[cart] refreshCart, user:', user?.id ?? null)
     try {
       if (!user) { setItems([]); setIsLoading(false); return }
 
@@ -42,11 +41,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select('*, product:products(*)')
         .eq('user_id', user.id)
 
-      console.log('[cart] respuesta cart_items:', data?.length, error)
       if (error) throw error
       setItems(data || [])
     } catch (error) {
-      console.error('Error fetching cart:', error)
+      // Error silencioso: el usuario ya ve el carrito vacío/isLoading en la UI
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +81,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(prev => [...prev, data])
       toast.success(`${variantName ? variantName + ' agregado' : 'Producto agregado'} al carrito`)
     } catch (error) {
-      console.error('Error adding to cart:', error)
       toast.error('Error al agregar producto')
     }
   }
@@ -103,7 +100,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(prev => prev.filter(i => !(i.product_id === productId && (i.variant_id || null) === variantId)))
       toast.success('Producto eliminado del carrito')
     } catch (error) {
-      console.error('Error removing from cart:', error)
       toast.error('Error al eliminar producto')
     }
   }
@@ -128,7 +124,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : i
       ))
     } catch (error) {
-      console.error('Error updating quantity:', error)
       toast.error('Error al actualizar cantidad')
     }
   }
@@ -140,7 +135,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       setItems([])
     } catch (error) {
-      console.error('Error clearing cart:', error)
       toast.error('Error al vaciar carrito')
     }
   }

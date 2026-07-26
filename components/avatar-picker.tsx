@@ -49,7 +49,6 @@ export function AvatarPicker({ userId, fullName, avatarUrl, onChange, size = 'lg
       toast.success('¡Avatar actualizado!')
       setOpen(false)
     } catch (e) {
-      console.error('Error guardando avatar:', e)
       toast.error('No se pudo guardar el avatar. Probá de nuevo.')
     } finally {
       setSaving(null)
@@ -82,7 +81,6 @@ export function AvatarPicker({ userId, fullName, avatarUrl, onChange, size = 'lg
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       await saveAvatar(data.publicUrl)
     } catch (err) {
-      console.error('Error subiendo avatar:', err)
       toast.error('No se pudo subir la foto. Probá de nuevo.')
     } finally {
       setUploading(false)

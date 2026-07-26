@@ -108,7 +108,6 @@ export function OrderEditor({ orderId, editNote, items: initialItems, adminId, o
 
       onSaved(newTotal, remaining)
     } catch (err) {
-      console.error(err)
       toast.error('No se pudo guardar. Probá de nuevo en un momento.')
     } finally {
       setSaving(false)

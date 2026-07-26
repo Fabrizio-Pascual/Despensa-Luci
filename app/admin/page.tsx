@@ -71,7 +71,6 @@ export default function AdminOrdersPage() {
     const { data, error } = await query
 
     if (error) {
-      console.error('Error loading orders:', error)
       toast.error('Error al cargar pedidos')
     } else {
       setOrders(data || [])
@@ -119,7 +118,6 @@ export default function AdminOrdersPage() {
 
       loadOrders()
     } catch (error) {
-      console.error('Error updating order:', error)
       toast.error('Error al actualizar pedido')
     }
   }

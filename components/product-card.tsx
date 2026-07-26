@@ -172,12 +172,12 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2 pt-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement} disabled={isUpdating}>
-              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Minus className="h-3 w-3" />}
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement} disabled={isUpdating} loading={isUpdating}>
+              <Minus className="h-3 w-3" />
             </Button>
             <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock}>
-              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock} loading={isUpdating}>
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
         )}

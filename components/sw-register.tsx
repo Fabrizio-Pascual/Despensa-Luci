@@ -15,7 +15,6 @@ export function ServiceWorkerRegister() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
     navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.error('[ServiceWorkerRegister] no se pudo registrar sw.js:', err)
     })
   }, [])
 

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CreditCard, Banknote, FileText, Minus, Plus, Package, Trash2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, CreditCard, Banknote, FileText, Minus, Plus, Package, Trash2, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -26,8 +26,19 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('')
   const [cashAmount, setCashAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+
+  const runPending = async (key: string, action: () => Promise<void>) => {
+    if (pendingKey) return
+    setPendingKey(key)
+    try {
+      await action()
+    } finally {
+      setPendingKey(null)
+    }
+  }
 
   const cashNum = parseFloat(cashAmount) || 0
   const cambio = cashNum - total
@@ -101,7 +112,6 @@ export default function CheckoutPage() {
       toast.success('¡Pedido realizado con éxito!')
       router.push(`/dashboard/pedidos/${order.id}`)
     } catch (error) {
-      console.error('Error creating order:', error)
       toast.error('Error al crear el pedido')
     } finally {
       setIsSubmitting(false)
@@ -141,8 +151,16 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 {items.map((item) => {
                   const variantId = item.variant_id || null
+                  const keyBase = `${item.product_id}-${variantId ?? 'none'}`
+                  const removeKey = `${keyBase}-remove`
+                  const decKey = `${keyBase}-dec`
+                  const incKey = `${keyBase}-inc`
+                  const isRemoving = pendingKey === removeKey
+                  const isDecreasing = pendingKey === decKey
+                  const isIncreasing = pendingKey === incKey
+                  const rowBusy = pendingKey !== null && pendingKey.startsWith(keyBase)
                   return (
-                    <div key={item.id} className="flex gap-4 py-4 border-b border-border/40 last:border-0 last:pb-0">
+                    <div key={item.id} className={`flex gap-4 py-4 border-b border-border/40 last:border-0 last:pb-0 ${rowBusy ? 'opacity-70' : ''}`}>
                       <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-muted shrink-0">
                         {item.product.image_url ? (
                           <Image src={item.product.image_url} alt={item.product.name} fill className="object-contain p-1" unoptimized />
@@ -160,15 +178,30 @@ export default function CheckoutPage() {
                         <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex items-center gap-3 bg-secondary/60 rounded-full px-3 py-1">
-                            <button className="text-primary hover:text-primary/70 premium-transition active:scale-90" onClick={() => updateQuantity(item.product_id, item.quantity - 1, variantId)}>
-                              <Minus className="h-3.5 w-3.5" />
+                            <button
+                              className="text-primary hover:text-primary/70 premium-transition active:scale-90 disabled:opacity-40 disabled:pointer-events-none"
+                              disabled={pendingKey !== null}
+                              onClick={() => runPending(decKey, () => updateQuantity(item.product_id, item.quantity - 1, variantId))}
+                            >
+                              {isDecreasing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Minus className="h-3.5 w-3.5" />}
                             </button>
                             <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
-                            <button className="text-primary hover:text-primary/70 premium-transition active:scale-90 disabled:opacity-40 disabled:pointer-events-none" onClick={() => updateQuantity(item.product_id, item.quantity + 1, variantId)} disabled={item.quantity >= item.product.stock}>
-                              <Plus className="h-3.5 w-3.5" />
+                            <button
+                              className="text-primary hover:text-primary/70 premium-transition active:scale-90 disabled:opacity-40 disabled:pointer-events-none"
+                              onClick={() => runPending(incKey, () => updateQuantity(item.product_id, item.quantity + 1, variantId))}
+                              disabled={pendingKey !== null || item.quantity >= item.product.stock}
+                            >
+                              {isIncreasing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                             </button>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto rounded-full text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.product_id, variantId)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 ml-auto rounded-full text-muted-foreground hover:text-destructive"
+                            disabled={pendingKey !== null}
+                            loading={isRemoving}
+                            onClick={() => runPending(removeKey, () => removeFromCart(item.product_id, variantId))}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

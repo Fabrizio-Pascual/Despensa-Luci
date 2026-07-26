@@ -68,7 +68,6 @@ export default function ProfilePage() {
       if (error) throw error
       toast.success('Perfil actualizado')
     } catch (error) {
-      console.error('Error updating profile:', error)
       toast.error('Error al actualizar perfil')
     } finally {
       setIsSaving(false)
@@ -100,7 +99,6 @@ export default function ProfilePage() {
       setNewPassword('')
       setConfirmPassword('')
     } catch (error) {
-      console.error('Error changing password:', error)
       toast.error('Error al cambiar contraseña')
     } finally {
       setIsChangingPassword(false)

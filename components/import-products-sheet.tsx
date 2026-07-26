@@ -91,7 +91,6 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
         if (parsed.length === 0) toast.error('El archivo no tiene filas de datos')
       } catch (err) {
         toast.error('No se pudo leer el archivo. Verificá que sea un .xlsx válido')
-        console.error(err)
       }
     }
     reader.readAsArrayBuffer(file)
@@ -158,7 +157,6 @@ export function ImportProductsSheet({ open, onClose, categories, onImported }: I
       toast.warning(
         `✅ ${createdCount} + ${updatedCount} OK | ⚠️ ${errors.length} con error`
       )
-      console.warn('Errores de importación:', errors)
     }
 
     setImported(true)

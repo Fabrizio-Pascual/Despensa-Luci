@@ -82,7 +82,6 @@ export default function AdminCategoriasPage() {
       resetForm()
       loadCategories()
     } catch (error) {
-      console.error(error)
       toast.error('Error al guardar')
     } finally {
       setIsSaving(false)
