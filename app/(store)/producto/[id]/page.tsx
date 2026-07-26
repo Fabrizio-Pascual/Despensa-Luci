@@ -2,10 +2,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Package, MapPin } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Package, MapPin } from 'lucide-react'
 import { ProductCard } from '@/components/product-card'
 import { AddToCartPanel } from '@/components/add-to-cart-panel'
+import { Breadcrumbs } from '@/components/breadcrumbs'
+import { FavoriteButton } from '@/components/favorite-button'
 import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
@@ -54,21 +55,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="mesh-bg" />
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/categorias"><ArrowLeft className="mr-2 h-4 w-4" />Categorías</Link>
-          </Button>
-          {product.category?.name && (
-            <>
-              <span>/</span>
-              <Link href={`/categorias/${product.category.slug}`} className="hover:text-primary premium-transition">
-                {product.category.name}
-              </Link>
-            </>
-          )}
-          <span>/</span>
-          <span className="text-foreground">{product.name}</span>
-        </div>
+        <Breadcrumbs
+          items={[
+            { label: 'Categorías', href: '/categorias' },
+            ...(product.category?.name
+              ? [{ label: product.category.name, href: `/categorias/${product.category.slug}` }]
+              : []),
+            { label: product.name, href: '#', current: true },
+          ]}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Imagen principal */}
@@ -89,7 +84,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.category.name}
               </span>
             )}
-            <h1 className="text-display-lg text-foreground mb-3">{product.name}</h1>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-display-lg text-foreground mb-3">{product.name}</h1>
+              <FavoriteButton productId={product.id} className="shrink-0 mt-1" />
+            </div>
             {product.description && (
               <p className="text-body-lg text-muted-foreground leading-relaxed mb-6">{product.description}</p>
             )}

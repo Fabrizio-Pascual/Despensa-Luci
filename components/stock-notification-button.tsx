@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell, BellOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/auth-provider'
@@ -21,6 +21,22 @@ export function StockNotificationButton({
   const supabase = createClient()
   const [isNotified, setIsNotified] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    const checkExisting = async () => {
+      const { data } = await supabase
+        .from('stock_notifications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+        .maybeSingle()
+      if (!cancelled) setIsNotified(!!data)
+    }
+    checkExisting()
+    return () => { cancelled = true }
+  }, [user, productId, supabase])
 
   const handleNotify = async () => {
     if (!user) {

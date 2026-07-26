@@ -43,11 +43,11 @@ export function RecommendationsCarousel({
           .order('favorite_count', { ascending: false })
           .limit(limit)
       } else if (type === 'popular') {
-        // Productos con mejor rating
+        // Productos más vendidos
         query = supabase
           .from('top_products_view')
           .select('*')
-          .order('avg_rating', { ascending: false })
+          .order('sales_count', { ascending: false })
           .limit(limit)
       }
 

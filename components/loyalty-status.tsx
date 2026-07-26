@@ -33,7 +33,7 @@ export function LoyaltyStatus() {
       if (error) {
         if (error.code === 'PGRST116') {
           // No existe, crear uno nuevo
-          await supabase
+          const { data: created } = await supabase
             .from('user_loyalty_points')
             .insert({
               user_id: user.id,
@@ -41,7 +41,9 @@ export function LoyaltyStatus() {
               total_points_earned: 0,
               total_points_used: 0
             })
-          setLoyalty(null)
+            .select()
+            .single()
+          setLoyalty(created ?? null)
         } else {
           throw error
         }

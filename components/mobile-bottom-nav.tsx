@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, LayoutGrid, ShoppingCart, User, Home, MoreVertical, HelpCircle, LayoutDashboard } from 'lucide-react'
+import { Search, LayoutGrid, ShoppingCart, User, Home, MoreVertical, HelpCircle, LayoutDashboard, Heart, Zap } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
 import { ProductSearch } from '@/components/product-search'
@@ -97,6 +97,26 @@ export function MobileBottomNav() {
           {/* Dropdown menu */}
           {moreMenuOpen && (
             <div className="absolute bottom-14 right-0 bg-background border border-border rounded-lg shadow-lg overflow-hidden z-50 min-w-48">
+              <Link
+                href="/favoritos"
+                className="flex items-center gap-2 px-4 py-3 hover:bg-muted premium-transition text-sm w-full"
+                onClick={() => handleMoreMenuClick('/favoritos')}
+              >
+                <Heart className="h-4 w-4" />
+                <span>Favoritos</span>
+              </Link>
+
+              <div className="border-t border-border" />
+              <Link
+                href="/ofertas"
+                className="flex items-center gap-2 px-4 py-3 hover:bg-muted premium-transition text-sm w-full"
+                onClick={() => handleMoreMenuClick('/ofertas')}
+              >
+                <Zap className="h-4 w-4" />
+                <span>Ofertas</span>
+              </Link>
+
+              <div className="border-t border-border" />
               <Link
                 href="/como-comprar"
                 className="flex items-center gap-2 px-4 py-3 hover:bg-muted premium-transition text-sm w-full"

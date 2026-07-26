@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
-import { ShoppingCart, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle } from 'lucide-react'
+import { ShoppingCart, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle, Heart, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
@@ -86,12 +86,22 @@ export function Header() {
           <Link href="/como-comprar" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
             <HelpCircle className="h-4 w-4" /> Cómo comprar
           </Link>
+          <Link href="/ofertas" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
+            <Zap className="h-4 w-4" /> Ofertas
+          </Link>
         </nav>
 
         {/* Actions (solo desktop: en mobile esto lo reemplaza la barra de abajo) */}
         <div className="hidden md:flex items-center gap-1">
           {/* Búsqueda de productos */}
           <ProductSearch />
+
+          {/* Favoritos */}
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary/50" asChild>
+            <Link href="/favoritos" title="Mis favoritos">
+              <Heart className="h-5 w-5" />
+            </Link>
+          </Button>
 
           {/* Carrito — página completa */}
           <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary/50" asChild>

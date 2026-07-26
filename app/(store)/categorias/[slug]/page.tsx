@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProductCard } from '@/components/product-card'
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
@@ -57,6 +58,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
+        <Breadcrumbs
+          items={[
+            { label: 'Categorías', href: '/categorias' },
+            { label: category.name, href: `/categorias/${category.slug}`, current: true },
+          ]}
+        />
         <Button variant="ghost" size="sm" asChild className="mb-4">
           <Link href="/categorias">
             <ArrowLeft className="mr-2 h-4 w-4" />

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Minus, Plus, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
+import { StockNotificationButton } from '@/components/stock-notification-button'
 import type { Product } from '@/lib/types'
 
 function formatPrice(price: number): string {
@@ -74,6 +75,9 @@ export function AddToCartPanel({ product, variants }: { product: Product; varian
         <p className="text-warning text-sm mb-4">Quedan {effectiveStock} unidades</p>
       ) : null}
 
+      {isOutOfStock ? (
+        <StockNotificationButton productId={product.id} productName={product.name} />
+      ) : (
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 bg-card border border-border/60 rounded-xl px-3 py-2.5">
           <button className="text-foreground hover:text-primary premium-transition disabled:opacity-30" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
@@ -89,6 +93,7 @@ export function AddToCartPanel({ product, variants }: { product: Product; varian
           Agregar al carrito
         </Button>
       </div>
+      )}
     </div>
   )
 }

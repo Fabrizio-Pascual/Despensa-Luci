@@ -7,6 +7,7 @@ import { Minus, Plus, ShoppingCart, Package, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/components/cart-context'
+import { FavoriteButton } from '@/components/favorite-button'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@/lib/types'
 
@@ -99,7 +100,7 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <div className="bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
+    <div className="relative bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
       {/* Imagen */}
       <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted block">
         {effectiveImage ? (
@@ -126,6 +127,12 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         )}
       </Link>
+
+      {/* Favorito — flotante sobre la imagen, arriba a la izquierda */}
+      <div className="absolute top-3 left-3 z-10">
+        <FavoriteButton productId={product.id} className="!bg-background/70 backdrop-blur-sm" />
+      </div>
+
 
       <div className="px-1 space-y-3">
         <div>
