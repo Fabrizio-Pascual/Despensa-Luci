@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
 import { ServiceWorkerRegister } from '@/components/sw-register'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
+import { RouteLoadingBar } from '@/components/route-loading-bar'
 import { createClient } from '@/lib/supabase/server'
 import { getUserSafe } from '@/lib/supabase/get-user-safe'
 import './globals.css'
@@ -88,6 +89,7 @@ export default async function RootLayout({
             initialUser={user ? { id: user.id, email: user.email ?? undefined } : null}
             initialProfile={profile}
           >
+            <RouteLoadingBar />
             {children}
             <ServiceWorkerRegister />
             <CookieConsentBanner />
