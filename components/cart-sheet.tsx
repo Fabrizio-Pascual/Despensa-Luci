@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, Loader2 } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, Loader2, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -16,7 +16,7 @@ function formatPrice(price: number): string {
 
 export function CartSheet({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
-  const { items, itemCount, total, updateQuantity, removeFromCart, isLoading } = useCart()
+  const { items, itemCount, total, updateQuantity, removeFromCart, updateComboQuantity, removeCombo, isLoading } = useCart()
   // Guardamos qué botón puntual está en curso (producto+variante+acción) para
   // mostrarle el spinner solo a ese botón, sin bloquear el resto del carrito.
   const [pendingKey, setPendingKey] = useState<string | null>(null)
@@ -63,8 +63,9 @@ export function CartSheet({ children }: { children: ReactNode }) {
             <ScrollArea className="flex-1 -mx-6 px-6">
               <div className="space-y-4 pb-4">
                 {items.map((item) => {
+                  const isCombo = !!item.combo_id
                   const variantId = item.variant_id || null
-                  const keyBase = `${item.product_id}-${variantId ?? 'none'}`
+                  const keyBase = isCombo ? `combo-${item.combo_id}` : `${item.product_id}-${variantId ?? 'none'}`
                   const removeKey = `${keyBase}-remove`
                   const decKey = `${keyBase}-dec`
                   const incKey = `${keyBase}-inc`
@@ -72,21 +73,32 @@ export function CartSheet({ children }: { children: ReactNode }) {
                   const isDecreasing = pendingKey === decKey
                   const isIncreasing = pendingKey === incKey
                   const rowBusy = pendingKey !== null && pendingKey.startsWith(keyBase)
+
+                  const name = isCombo ? (item.combo?.name || 'Combo') : item.product.name
+                  const price = isCombo ? (item.combo?.price || 0) : item.product.price
+                  const imageUrl = isCombo ? item.combo?.image_url : item.product.image_url
+                  const maxQty = isCombo ? (item.combo?.available_qty ?? 99) : item.product.stock
+
+                  const handleRemove = () => isCombo ? removeCombo(item.combo_id!) : removeFromCart(item.product_id!, variantId)
+                  const handleDec = () => isCombo ? updateComboQuantity(item.combo_id!, item.quantity - 1) : updateQuantity(item.product_id!, item.quantity - 1, variantId)
+                  const handleInc = () => isCombo ? updateComboQuantity(item.combo_id!, item.quantity + 1) : updateQuantity(item.product_id!, item.quantity + 1, variantId)
+
                   return (
                     <div key={item.id} className={`flex gap-4 p-3 rounded-2xl bg-muted/40 border border-border/50 transition-all duration-300 hover:shadow-warm active:scale-[0.98] ${rowBusy ? 'opacity-70' : ''}`}>
                       <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                        {item.product.image_url ? (
-                          <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" unoptimized />
+                        {imageUrl ? (
+                          <Image src={imageUrl} alt={name} fill className="object-cover" unoptimized />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
-                            <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
+                            {isCombo ? <Gift className="h-8 w-8 text-muted-foreground/50" /> : <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2">
                           <h4 className="font-medium text-sm truncate">
-                            {item.product.name}
+                            {isCombo && <Gift className="inline h-3.5 w-3.5 mr-1 text-primary" />}
+                            {name}
                             {item.variant_name && (
                               <span className="text-muted-foreground font-normal"> · {item.variant_name}</span>
                             )}
@@ -94,27 +106,27 @@ export function CartSheet({ children }: { children: ReactNode }) {
                           <button
                             className="text-muted-foreground hover:text-destructive transition-colors shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                             disabled={pendingKey !== null}
-                            onClick={() => runPending(removeKey, () => removeFromCart(item.product_id, variantId))}
+                            onClick={() => runPending(removeKey, handleRemove)}
                           >
                             {isRemoving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           </button>
                         </div>
-                        <p className="text-sm text-muted-foreground">{formatPrice(item.product.price)} / {item.product.unit}</p>
+                        <p className="text-sm text-muted-foreground">{isCombo ? 'Combo' : `${formatPrice(price)} / ${item.product.unit}`}</p>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-3 bg-muted rounded-full px-3 py-1">
                             <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150 disabled:opacity-40 disabled:pointer-events-none"
                               disabled={pendingKey !== null}
-                              onClick={() => runPending(decKey, () => updateQuantity(item.product_id, item.quantity - 1, variantId))}>
+                              onClick={() => runPending(decKey, handleDec)}>
                               {isDecreasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Minus className="h-3 w-3" />}
                             </button>
                             <span className="text-sm font-semibold min-w-[1rem] text-center">{item.quantity}</span>
                             <button className="text-primary hover:text-primary/70 transition-colors active:scale-90 duration-150 disabled:opacity-40 disabled:pointer-events-none"
-                              onClick={() => runPending(incKey, () => updateQuantity(item.product_id, item.quantity + 1, variantId))}
-                              disabled={pendingKey !== null || item.quantity >= item.product.stock}>
+                              onClick={() => runPending(incKey, handleInc)}
+                              disabled={pendingKey !== null || item.quantity >= maxQty}>
                               {isIncreasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
                             </button>
                           </div>
-                          <p className="font-semibold text-sm text-primary">{formatPrice(item.product.price * item.quantity)}</p>
+                          <p className="font-semibold text-sm text-primary">{formatPrice(price * item.quantity)}</p>
                         </div>
                       </div>
                     </div>

@@ -59,20 +59,26 @@ export interface Order {
 export interface OrderItem {
   id: string
   order_id: string
-  product_id: string
+  product_id: string | null
   quantity: number
   unit_price: number
   subtotal: number
   product?: Product
+  /** Si esta línea del pedido es un combo, referencia al combo (puede ser null si el combo fue borrado) */
+  combo_id?: string | null
+  /** Nombre del combo al momento de la compra (se guarda aparte por si el combo cambia o se borra después) */
+  combo_name?: string | null
 }
 
 export interface CartItem {
   id: string
   user_id: string
-  product_id: string
+  product_id: string | null
   quantity: number
   created_at: string
   product?: Product
+  combo_id?: string | null
+  combo?: Combo
 }
 
 export interface Debt {
@@ -126,4 +132,26 @@ export interface FlashSale {
   is_active: boolean
   created_at: string
   product?: Product
+}
+
+export interface ComboItem {
+  id: string
+  combo_id: string
+  product_id: string
+  quantity: number
+  product?: Product
+}
+
+export interface Combo {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  image_url: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  combo_items?: ComboItem[]
+  /** viene de combo_availability_view: cuántos combos se pueden armar ahora con el stock actual */
+  available_qty?: number
 }

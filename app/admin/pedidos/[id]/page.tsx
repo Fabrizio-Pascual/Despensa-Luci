@@ -317,7 +317,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               </div>
               <div className="flex-1">
                 <p className="font-medium">
-                  {item.product?.name}
+                  {item.combo_id ? `🎁 ${item.combo_name || 'Combo'}` : item.product?.name}
                   {item.variant_name && <span className="text-primary font-semibold"> · {item.variant_name}</span>}
                 </p>
                 <p className="text-sm text-muted-foreground">{item.quantity} x {formatPrice(item.unit_price)}</p>

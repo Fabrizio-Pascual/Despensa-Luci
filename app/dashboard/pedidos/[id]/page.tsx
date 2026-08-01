@@ -64,7 +64,7 @@ async function generateReceipt(order: any) {
 
   let y = 88
   order.order_items?.forEach((item: any) => {
-    doc.text(item.product?.name?.substring(0, 35) || 'N/A', 20, y)
+    doc.text((item.combo_id ? `Combo: ${item.combo_name}` : item.product?.name)?.substring(0, 35) || 'N/A', 20, y)
     doc.text(item.quantity.toString(), 125, y)
     doc.text(formatPrice(item.unit_price), 145, y)
     doc.text(formatPrice(item.subtotal), 170, y)
@@ -318,7 +318,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <div key={item.id} className="flex justify-between py-2 border-b last:border-0">
               <div>
                 <p className="font-medium">
-                  {item.product?.name}
+                  {item.combo_id ? `🎁 ${item.combo_name || 'Combo'}` : item.product?.name}
                   {item.variant_name && <span className="text-primary font-semibold"> · {item.variant_name}</span>}
                 </p>
                 <p className="text-sm text-muted-foreground">{item.quantity} x {formatPrice(item.unit_price)}</p>

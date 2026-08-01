@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, LayoutGrid, ShoppingCart, User, Home, MoreVertical, HelpCircle, LayoutDashboard, Heart, Zap } from 'lucide-react'
+import { Search, LayoutGrid, ShoppingCart, User, Home, MoreVertical, HelpCircle, LayoutDashboard, Heart, Gift, Sun, Moon } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
 import { ProductSearch } from '@/components/product-search'
@@ -18,7 +19,9 @@ export function MobileBottomNav() {
   const pathname = usePathname()
   const { user, profile } = useAuth()
   const { itemCount } = useCart()
+  const { theme, setTheme } = useTheme()
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const isDark = theme === 'dark'
 
   const isAdmin = profile?.is_admin || false
 
@@ -108,13 +111,23 @@ export function MobileBottomNav() {
 
               <div className="border-t border-border" />
               <Link
-                href="/ofertas"
+                href="/combos"
                 className="flex items-center gap-2 px-4 py-3 hover:bg-muted premium-transition text-sm w-full"
-                onClick={() => handleMoreMenuClick('/ofertas')}
+                onClick={() => handleMoreMenuClick('/combos')}
               >
-                <Zap className="h-4 w-4" />
-                <span>Ofertas</span>
+                <Gift className="h-4 w-4" />
+                <span>Combos</span>
               </Link>
+
+              <div className="border-t border-border" />
+              <button
+                type="button"
+                onClick={() => { setTheme(isDark ? 'light' : 'dark'); setMoreMenuOpen(false) }}
+                className="flex items-center gap-2 px-4 py-3 hover:bg-muted premium-transition text-sm w-full text-left"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <span>{isDark ? 'Modo claro' : 'Modo oscuro'}</span>
+              </button>
 
               <div className="border-t border-border" />
               <Link

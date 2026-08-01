@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
-import { ShoppingCart, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle, Heart, Zap } from 'lucide-react'
+import { ShoppingCart, LogOut, LayoutDashboard, Store, ChevronDown, HelpCircle, Heart, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/components/auth-provider'
 import { useCart } from '@/components/cart-context'
 import { ProductSearch } from '@/components/product-search'
+import { ThemeToggle } from '@/components/theme-toggle'
 import type { Category } from '@/lib/types'
 
 export function Header() {
@@ -86,8 +87,8 @@ export function Header() {
           <Link href="/como-comprar" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
             <HelpCircle className="h-4 w-4" /> Cómo comprar
           </Link>
-          <Link href="/ofertas" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
-            <Zap className="h-4 w-4" /> Ofertas
+          <Link href="/combos" className="flex items-center gap-1 text-muted-foreground hover:text-primary premium-transition text-label-bold">
+            <Gift className="h-4 w-4" /> Combos
           </Link>
         </nav>
 
@@ -95,6 +96,9 @@ export function Header() {
         <div className="hidden md:flex items-center gap-1">
           {/* Búsqueda de productos */}
           <ProductSearch />
+
+          {/* Modo claro/oscuro */}
+          <ThemeToggle />
 
           {/* Favoritos */}
           <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary/50" asChild>

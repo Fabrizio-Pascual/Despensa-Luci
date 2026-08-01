@@ -15,10 +15,12 @@ function formatPrice(price: number) {
 
 interface EditableItem {
   id: string
-  product_id: string
+  product_id: string | null
   quantity: number
   unit_price: number
   product?: { name: string }
+  combo_id?: string | null
+  combo_name?: string | null
 }
 
 interface OrderEditorProps {
@@ -133,7 +135,7 @@ export function OrderEditor({ orderId, editNote, items: initialItems, adminId, o
           {items.map(it => (
             <div key={it.id} className={`flex items-center justify-between gap-2 ${it.quantity === 0 ? 'opacity-40' : ''}`}>
               <div className="min-w-0">
-                <p className="font-medium truncate">{it.product?.name}</p>
+                <p className="font-medium truncate">{it.combo_id ? `🎁 ${it.combo_name || 'Combo'}` : it.product?.name}</p>
                 <p className="text-xs text-muted-foreground">{formatPrice(it.unit_price)} c/u</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

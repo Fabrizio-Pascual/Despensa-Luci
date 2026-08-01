@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, Star } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, Star, Gift } from 'lucide-react'
 import { AdminMobileNav } from '@/components/admin-mobile-nav'
 import { AdminNotifications } from '@/components/admin-notifications'
 
 const navItems = [
   { href: '/admin', label: 'Pedidos', icon: ShoppingCart },
   { href: '/admin/productos', label: 'Productos', icon: Package },
+  { href: '/admin/combos', label: 'Combos', icon: Gift },
   { href: '/admin/categorias', label: 'Categorías', icon: Tag },
   { href: '/admin/ventas', label: 'Ventas', icon: BarChart3 },
   { href: '/admin/deudas', label: 'Deudas', icon: FileText },

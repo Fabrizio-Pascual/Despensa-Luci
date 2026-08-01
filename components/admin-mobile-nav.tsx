@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Home, ShoppingCart, Package, Tag, BarChart3, FileText, Users, Star } from 'lucide-react'
+import { Menu, Home, ShoppingCart, Package, Tag, BarChart3, FileText, Users, Star, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 
 const navItems = [
   { href: '/admin', label: 'Pedidos', icon: ShoppingCart },
   { href: '/admin/productos', label: 'Productos', icon: Package },
+  { href: '/admin/combos', label: 'Combos', icon: Gift },
   { href: '/admin/categorias', label: 'Categorías', icon: Tag },
   { href: '/admin/ventas', label: 'Ventas', icon: BarChart3 },
   { href: '/admin/deudas', label: 'Deudas', icon: FileText },

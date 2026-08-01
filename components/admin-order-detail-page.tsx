@@ -327,7 +327,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           {order.order_items?.map((item: any) => (
             <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
               <div>
-                <p className="font-medium">{item.product?.name}</p>
+                <p className="font-medium">{item.combo_id ? `🎁 ${item.combo_name || 'Combo'}` : item.product?.name}</p>
                 <p className="text-sm text-muted-foreground">{item.quantity} x {formatPrice(item.unit_price)}</p>
               </div>
               <p className="font-semibold">{formatPrice(item.subtotal)}</p>

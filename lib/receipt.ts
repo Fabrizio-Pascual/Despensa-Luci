@@ -45,7 +45,7 @@ export function generateReceipt(order: any) {
 
   let y = 88
   order.order_items?.forEach((item: any) => {
-    doc.text(item.product?.name?.substring(0, 35) || 'N/A', 20, y)
+    doc.text((item.combo_id ? `Combo: ${item.combo_name}` : item.product?.name)?.substring(0, 35) || 'N/A', 20, y)
     doc.text(item.quantity.toString(), 125, y)
     doc.text(formatPrice(item.unit_price), 145, y)
     doc.text(formatPrice(item.subtotal), 170, y)
