@@ -87,7 +87,7 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
   const persist = async (id: string, field: string, value: any) => {
     const { error } = await supabase
       .from('product_variants')
-      .update({ [field]: value, updated_at: new Date().toISOString() })
+      .update({ [field]: value })
       .eq('id', id)
     if (error) toast.error('No se pudo guardar el cambio')
   }
