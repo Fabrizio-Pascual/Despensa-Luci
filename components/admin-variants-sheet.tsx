@@ -74,12 +74,27 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
     setIsSaving(false)
   }
 
-  const handleUpdate = async (id: string, field: string, value: any) => {
+  // Actualiza el campo SOLO en pantalla (estado local), al toque, sin tocar la base.
+  // Esto es lo que te deja escribir con normalidad: el input ya no "pelea"
+  // contra una recarga que llega después de cada letra/número.
+  const updateLocal = (id: string, field: string, value: any) => {
+    setVariants(prev => prev.map(v => (v.id === id ? { ...v, [field]: value } : v)))
+  }
+
+  // Guarda en la base. Para texto/número se llama recién al salir del campo
+  // (onBlur), no en cada tecla. Para el switch (activo/inactivo) se llama al toque,
+  // porque ahí no hay riesgo de "pisar" lo que se está tipeando.
+  const persist = async (id: string, field: string, value: any) => {
     const { error } = await supabase
       .from('product_variants')
       .update({ [field]: value, updated_at: new Date().toISOString() })
       .eq('id', id)
-    if (!error) loadVariants()
+    if (error) toast.error('No se pudo guardar el cambio')
+  }
+
+  const handleUpdate = (id: string, field: string, value: any) => {
+    updateLocal(id, field, value)
+    persist(id, field, value)
   }
 
   const handleDelete = async (id: string) => {
@@ -156,7 +171,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                       )}
                       <Input
                         value={variant.name}
-                        onChange={e => handleUpdate(variant.id, 'name', e.target.value)}
+                        onChange={e => updateLocal(variant.id, 'name', e.target.value)}
+                        onBlur={e => persist(variant.id, 'name', e.target.value)}
                         className="h-7 text-sm font-medium w-32"
                       />
                     </div>
@@ -176,7 +192,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                       <Input
                         type="number"
                         value={variant.stock}
-                        onChange={e => handleUpdate(variant.id, 'stock', parseInt(e.target.value) || 0)}
+                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? 0 : Number(e.target.value))}
+                        onBlur={e => persist(variant.id, 'stock', parseInt(e.target.value) || 0)}
                         className="h-7 text-sm"
                       />
                     </div>
@@ -185,7 +202,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                       <Input
                         type="number"
                         value={variant.price_modifier}
-                        onChange={e => handleUpdate(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
+                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? 0 : Number(e.target.value))}
+                        onBlur={e => persist(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
                         className="h-7 text-sm"
                       />
                     </div>
@@ -194,7 +212,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                     <Label className="text-xs text-muted-foreground">URL imagen</Label>
                     <Input
                       value={variant.image_url || ''}
-                      onChange={e => handleUpdate(variant.id, 'image_url', e.target.value || null)}
+                      onChange={e => updateLocal(variant.id, 'image_url', e.target.value)}
+                      onBlur={e => persist(variant.id, 'image_url', e.target.value || null)}
                       placeholder="https://..."
                       className="h-7 text-sm"
                     />
