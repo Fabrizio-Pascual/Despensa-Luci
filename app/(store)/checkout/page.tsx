@@ -31,18 +31,18 @@ export default function CheckoutPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  // Al entrar al checkout, nos fijamos si el mail de esta cuenta está
-  // anotado en el sistema de fiados. Si no lo está, la opción "Fiado"
-  // directamente no se muestra.
+  // El checkout revisa si el cliente tiene "Fiado" habilitado desde
+  // Admin → Clientes (columna can_fiar del perfil). Es el mismo
+  // sistema que ya tenías armado; la deuda se crea sola al confirmar
+  // el pedido (igual que con efectivo o débito).
   useEffect(() => {
     let active = true
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!active || !user?.email) return
-      const { data, error } = await supabase.rpc('fiado_customer_exists', { p_email: user.email })
+      if (!active || !user) return
+      const { data, error } = await supabase.from('profiles').select('can_fiar').eq('id', user.id).single()
       if (!active) return
-      if (!error) setFiadoHabilitado(Boolean(data))
-      if (error) console.error('fiado_customer_exists', error)
+      if (!error) setFiadoHabilitado(Boolean(data?.can_fiar))
     })()
     return () => { active = false }
   }, [supabase])
@@ -110,23 +110,6 @@ export default function CheckoutPage() {
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
-
-      // Si eligió pagar con Fiado, anotamos la compra en el cuaderno digital.
-      if (paymentMethod === 'boucher' && user.email) {
-        const resumen = items.map(item => {
-          const name = item.combo_id ? (item.combo?.name || 'Combo') : item.product.name
-          return `${item.quantity}x ${name}`
-        }).join(', ')
-        const { data: anotado, error: fiadoError } = await supabase.rpc('fiado_record_purchase', {
-          p_email: user.email,
-          p_description: `Pedido online #${order.id.slice(0, 8)}: ${resumen}`,
-          p_amount: total,
-        })
-        if (fiadoError || !anotado) {
-          console.error('fiado_record_purchase', fiadoError)
-          toast.error('El pedido se creó, pero no se pudo anotar en el fiado. Avisale al local.')
-        }
-      }
 
       // Descontar stock — de la variante si tiene, del producto si es
       // suelto, o de cada producto que compone el combo (multiplicado por
