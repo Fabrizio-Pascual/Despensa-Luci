@@ -111,6 +111,23 @@ export default function CheckoutPage() {
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
 
+      // Si pagó con Fiado, además de la deuda nativa (que se crea sola),
+      // anotamos la compra en el cuaderno de fiados para que tus
+      // empleados la vean ahí también.
+      if (paymentMethod === 'boucher' && user.email) {
+        const resumen = items.map(item => {
+          const name = item.combo_id ? (item.combo?.name || 'Combo') : item.product.name
+          return `${item.quantity}x ${name}`
+        }).join(', ')
+        const { error: fiadoError } = await supabase.rpc('fiado_record_purchase', {
+          p_email: user.email,
+          p_description: `Pedido online #${order.id.slice(0, 8)}: ${resumen}`,
+          p_amount: total,
+          p_order_id: order.id,
+        })
+        if (fiadoError) console.error('fiado_record_purchase', fiadoError)
+      }
+
       // Descontar stock — de la variante si tiene, del producto si es
       // suelto, o de cada producto que compone el combo (multiplicado por
       // la cantidad de combos pedidos) si es un combo.

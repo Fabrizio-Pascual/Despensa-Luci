@@ -49,6 +49,10 @@ as $$
 begin
   if new.status = 'cancelled' and old.status is distinct from 'cancelled' then
     delete from public.debts where order_id = new.id and is_paid = false;
+    -- También borra la anotación en el cuaderno de fiados, si existe
+    -- (la tabla es de la otra app, pero vive en la misma base).
+    delete from public.fiados_customer_purchases
+      where "storeOrderId" = new.id::text and paid = false;
   end if;
   return new;
 end;
