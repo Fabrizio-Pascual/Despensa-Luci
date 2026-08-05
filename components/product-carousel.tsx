@@ -71,7 +71,6 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                     sizes="230px"
-                    unoptimized
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-primary/5">

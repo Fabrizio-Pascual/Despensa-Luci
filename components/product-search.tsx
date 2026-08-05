@@ -200,7 +200,7 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
                     >
                       <div className="h-11 w-11 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                         {product.image_url ? (
-                          <Image src={product.image_url} alt={product.name} width={44} height={44} className="object-cover h-full w-full" unoptimized />
+                          <Image src={product.image_url} alt={product.name} width={44} height={44} className="object-cover h-full w-full" sizes="44px" />
                         ) : (
                           <Package className="h-5 w-5 text-muted-foreground" />
                         )}

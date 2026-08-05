@@ -87,7 +87,7 @@ export function CartSheet({ children }: { children: ReactNode }) {
                     <div key={item.id} className={`flex gap-4 p-3 rounded-2xl bg-muted/40 border border-border/50 transition-all duration-300 hover:shadow-warm active:scale-[0.98] ${rowBusy ? 'opacity-70' : ''}`}>
                       <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                         {imageUrl ? (
-                          <Image src={imageUrl} alt={name} fill className="object-cover" unoptimized />
+                          <Image src={imageUrl} alt={name} fill className="object-cover" sizes="80px" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
                             {isCombo ? <Gift className="h-8 w-8 text-muted-foreground/50" /> : <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />}

@@ -231,7 +231,7 @@ export default function CheckoutPage() {
                     <div key={item.id} className={`flex gap-4 py-4 border-b border-border/40 last:border-0 last:pb-0 ${rowBusy ? 'opacity-70' : ''}`}>
                       <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-muted shrink-0">
                         {imageUrl ? (
-                          <Image src={imageUrl} alt={name} fill className="object-contain p-1" unoptimized />
+                          <Image src={imageUrl} alt={name} fill className="object-contain p-1" sizes="80px" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
                             {isCombo ? <Gift className="h-8 w-8 text-muted-foreground/50" /> : <Package className="h-8 w-8 text-muted-foreground/50" />}

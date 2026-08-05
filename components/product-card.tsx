@@ -109,7 +109,7 @@ export function ProductCard({ product }: { product: Product }) {
             alt={product.name}
             fill
             className="object-contain p-4 premium-transition group-hover:scale-110"
-            unoptimized
+            sizes="(max-width: 768px) 50vw, 300px"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center">

@@ -103,7 +103,7 @@ export default function CarritoPage() {
                   <div key={item.id} className={`flex gap-4 p-4 rounded-[24px] bg-card border border-border/40 premium-transition ${rowBusy ? 'opacity-70' : ''}`}>
                     <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-muted shrink-0">
                       {imageUrl ? (
-                        <Image src={imageUrl} alt={name} fill className="object-contain p-1" unoptimized />
+                        <Image src={imageUrl} alt={name} fill className="object-contain p-1" sizes="80px" />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">
                           {isCombo ? <Gift className="h-8 w-8 text-muted-foreground/50" /> : <Package className="h-8 w-8 text-muted-foreground/50" />}
@@ -177,7 +177,7 @@ export default function CarritoPage() {
                         title={`Agregar ${p.name}`}
                       >
                         {p.image_url ? (
-                          <Image src={p.image_url} alt={p.name} fill className="object-contain p-2 group-hover:scale-110 premium-transition" unoptimized />
+                          <Image src={p.image_url} alt={p.name} fill className="object-contain p-2 group-hover:scale-110 premium-transition" sizes="80px" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground/50" />

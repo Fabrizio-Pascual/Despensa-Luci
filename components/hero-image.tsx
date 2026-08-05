@@ -39,7 +39,7 @@ export function HeroImage() {
           fill
           priority
           className="object-cover"
-          unoptimized
+          sizes="(max-width: 768px) 100vw, 700px"
         />
         {/* Degradados que difuminan los bordes de la imagen para que se mezcle con el fondo, sin cortes bruscos */}
         <div

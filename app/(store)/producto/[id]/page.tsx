@@ -69,7 +69,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Imagen principal */}
           <div className="relative aspect-square rounded-[24px] overflow-hidden bg-card border border-border/40">
             {product.image_url ? (
-              <Image src={product.image_url} alt={product.name} fill className="object-contain p-8" unoptimized />
+              <Image src={product.image_url} alt={product.name} fill className="object-contain p-8" sizes="(max-width: 768px) 90vw, 500px" />
             ) : (
               <div className="h-full w-full flex items-center justify-center">
                 <Package className="h-20 w-20 text-muted-foreground/40" />

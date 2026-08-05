@@ -90,7 +90,7 @@ export default function CombosPage() {
                 <div key={combo.id} className="rounded-[24px] bg-card border border-border/40 overflow-hidden premium-transition hover:shadow-warm">
                   <div className="relative h-40 bg-muted">
                     {combo.image_url ? (
-                      <Image src={combo.image_url} alt={combo.name} fill className="object-cover" unoptimized />
+                      <Image src={combo.image_url} alt={combo.name} fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center">
                         <Gift className="h-12 w-12 text-muted-foreground/40" />

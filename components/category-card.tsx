@@ -33,7 +33,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
             alt={category.name}
             fill
             className="object-cover premium-transition group-hover:scale-110"
-            unoptimized
+            sizes="(max-width: 768px) 50vw, 300px"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-secondary">
