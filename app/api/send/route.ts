@@ -2,6 +2,33 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 /**
+ * Manda un mensaje por Telegram usando la API gratuita de Bots.
+ * No requiere tarjeta, no tiene costo, no tiene límite que nos afecte acá.
+ * Si no están configuradas las variables de entorno, no hace nada
+ * (no rompe el resto del aviso por push).
+ */
+async function notifyTelegram(text: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    })
+    // fetch no tira error si Telegram responde con un error (token o
+    // chat_id inválido, etc.) - hay que revisar el body para enterarse.
+    if (!res.ok) {
+      const body = await res.text()
+      console.error('[api/send] telegram rechazó el mensaje:', res.status, body)
+    }
+  } catch (e) {
+    console.error('[api/send] telegram falló (red):', e)
+  }
+}
+
+/**
  * Este endpoint lo llama un Database Webhook de Supabase (gratis, se
  * configura desde el dashboard, sin código) cada vez que se INSERTA una
  * fila nueva en la tabla `orders`. No lo llama el navegador del cliente:
@@ -9,7 +36,8 @@ import { NextResponse } from 'next/server'
  * hace el pedido, se le corte el wifi, etc.
  *
  * Busca a TODOS los admins (profiles.is_admin = true) y les manda un
- * push a cada dispositivo que tengan suscripto (celular, PC, lo que sea).
+ * push a cada dispositivo que tengan suscripto (celular, PC, lo que sea),
+ * y además un mensaje por Telegram (no depende de permisos del navegador).
  */
 export async function POST(req: Request) {
   try {
@@ -23,6 +51,15 @@ export async function POST(req: Request) {
     const payload = await req.json()
     // Formato estándar de un Database Webhook de Supabase: { record: {...} }
     const order = payload.record ?? payload
+
+    const total = order?.total ? `$${order.total}` : ''
+    const orderUrl = order?.id
+      ? `https://despensa-luci-puce.vercel.app/admin/pedidos/${order.id}`
+      : 'https://despensa-luci-puce.vercel.app/admin'
+
+    // Aviso por Telegram: se dispara siempre, apenas entra el pedido, sin
+    // depender de que el navegador esté abierto ni de permisos de push.
+    await notifyTelegram(`🛒 <b>Nuevo pedido</b>${total ? ' por ' + total : ''}\n${orderUrl}`)
 
     // Client con la Service Role: esto corre en el servidor, no en el
     // navegador, así que puede saltarse RLS para leer todos los admins
@@ -57,7 +94,6 @@ export async function POST(req: Request) {
       process.env.VAPID_PRIVATE_KEY!
     )
 
-    const total = order?.total ? `$${order.total}` : ''
     const notifPayload = JSON.stringify({
       title: '🛒 Nuevo pedido',
       body: `Pedido nuevo${total ? ' por ' + total : ''}. Tocá para verlo.`,
