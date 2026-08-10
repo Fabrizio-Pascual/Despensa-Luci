@@ -165,6 +165,14 @@ export default function CheckoutPage() {
         }
       } catch {}
 
+      try {
+        await fetch('/api/notify-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id, total }),
+        })
+      } catch {}
+
       await clearCart()
       toast.success('¡Pedido realizado con éxito!')
       router.push(`/dashboard/pedidos/${order.id}`)
