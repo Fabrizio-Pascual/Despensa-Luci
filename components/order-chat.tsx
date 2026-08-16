@@ -49,7 +49,8 @@ export function OrderChat({ orderId, currentUserId, isAdmin, notifyUserId }: Ord
     channel.on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${orderId}`
     }, (payload: any) => {
-      setMessages(prev => [...prev, payload.new as OrderMessage])
+      const incoming = payload.new as OrderMessage
+      setMessages(prev => (prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]))
     })
     channel.subscribe()
 
@@ -64,7 +65,7 @@ export function OrderChat({ orderId, currentUserId, isAdmin, notifyUserId }: Ord
   }, [messages.length])
 
   const send = async () => {
-    if (!text.trim()) return
+    if (!text.trim() || sending) return
     setSending(true)
     try {
       const { error } = await supabase.from('order_messages').insert({

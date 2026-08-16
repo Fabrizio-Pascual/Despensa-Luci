@@ -351,3 +351,32 @@ body {
   background-clip: text;
   color: transparent;
 }
+/* ============================================================
+   Accesibilidad: respeta la preferencia del sistema operativo
+   "reducir movimiento". Apaga animaciones decorativas (reveal,
+   floating-card, mesh, scale en hover) para quien la tenga
+   activada — común en gente con mareos por movimiento o que
+   simplemente prefiere una interfaz más quieta. No afecta
+   transiciones funcionales cortas (ej: cambio de color en hover),
+   solo movimiento/traslación/escalado prolongado.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .floating-card {
+    animation: none !important;
+  }
+  .reveal, .reveal-sequential > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .group:hover img,
+  .premium-transition:hover {
+    transform: none !important;
+  }
+}

@@ -11,11 +11,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' },
     ],
   },
-  experimental: {
-    turbo: {
-      enabled: false,
-    }
-  }
 }
 
 export default nextConfig

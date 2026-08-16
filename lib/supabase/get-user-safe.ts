@@ -35,7 +35,14 @@ export async function getUserSafe(supabase: SupabaseClient, timeoutMs = 8000) {
 
     if (result.error) {
       const code = (result.error as { code?: string }).code
-      console.error('[getUserSafe] error de auth.getUser():', result.error.message, code)
+      // "Auth session missing" es el caso normal y esperado cuando
+      // todavía nadie inició sesión (visitante nuevo, o cerró sesión).
+      // No es un error real, así que no lo logueamos como tal — evita
+      // que Next.js lo muestre como alarma roja en el overlay de dev.
+      const isNoSession = code === 'session_not_found' || result.error.message?.includes('session missing')
+      if (!isNoSession) {
+        console.error('[getUserSafe] error de auth.getUser():', result.error.message, code)
+      }
       if (code && INVALID_SESSION_CODES.includes(code)) {
         // Esto sí es una sesión rota de verdad: limpiamos.
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
