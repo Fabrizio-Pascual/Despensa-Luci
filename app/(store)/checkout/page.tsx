@@ -177,7 +177,17 @@ export default function CheckoutPage() {
       toast.success('¡Pedido realizado con éxito!')
       router.push(`/dashboard/pedidos/${order.id}`)
     } catch (error) {
-      toast.error('Error al crear el pedido')
+      // Logueamos el error real (antes se perdía por completo) para
+      // poder diagnosticar problemas reales del checkout.
+      console.error('[checkout] error al crear el pedido:', error)
+      const message = error instanceof Error ? error.message.toLowerCase() : ''
+      if (message.includes('stock') || message.includes('constraint')) {
+        toast.error('Parece que se agotó algún producto de tu pedido justo ahora. Revisá tu carrito e intentá de nuevo.')
+      } else if (message.includes('network') || message.includes('fetch')) {
+        toast.error('Sin conexión. Revisá tu internet e intentá de nuevo.')
+      } else {
+        toast.error('No pudimos completar tu pedido. Intentá de nuevo en un momento — si sigue fallando, escribinos.')
+      }
     } finally {
       setIsSubmitting(false)
     }

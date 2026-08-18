@@ -186,8 +186,21 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
                 </Link>
               </div>
             ) : !isLoading && results.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground px-4">
-                No encontramos productos que coincidan con &quot;{query}&quot;
+              <div className="py-12 text-center px-4">
+                <Search className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-medium text-foreground mb-1">
+                  No encontramos &quot;{query}&quot;
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Probá con otro nombre, o revisá las categorías
+                </p>
+                <Link
+                  href="/categorias"
+                  onClick={() => setOpen(false)}
+                  className="text-primary text-xs font-semibold hover:underline"
+                >
+                  Ver todas las categorías →
+                </Link>
               </div>
             ) : (
               <ul className="divide-y">

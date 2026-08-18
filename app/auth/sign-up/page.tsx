@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { GoogleAuthButton } from '@/components/google-auth-button'
+import { translateAuthError } from '@/lib/auth-errors'
 import { toast } from 'sonner'
 
 export default function SignUpPage() {
@@ -19,19 +20,21 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    setFormError(null)
+
     if (password !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden')
+      setFormError('Las contraseñas no coinciden.')
       return
     }
 
     if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres')
+      setFormError('La contraseña tiene que tener al menos 6 caracteres.')
       return
     }
 
@@ -55,8 +58,8 @@ export default function SignUpPage() {
       toast.success('Cuenta creada! Revisa tu email para confirmar.')
       router.push('/auth/sign-up-success')
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al crear cuenta'
-      toast.error(errorMessage)
+      const raw = error instanceof Error ? error.message : ''
+      setFormError(translateAuthError(raw))
     } finally {
       setIsLoading(false)
     }
@@ -161,6 +164,11 @@ export default function SignUpPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
+            {formError && (
+              <p role="alert" className="text-sm text-destructive text-center -mt-1 w-full">
+                {formError}
+              </p>
+            )}
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md shadow-primary/20"

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { GoogleAuthButton } from '@/components/google-auth-button'
+import { translateAuthError } from '@/lib/auth-errors'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -17,11 +18,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
     setIsLoading(true)
 
     try {
@@ -36,8 +39,8 @@ export default function LoginPage() {
       router.push('/')
       router.refresh()
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesion'
-      toast.error(errorMessage)
+      const raw = error instanceof Error ? error.message : ''
+      setFormError(translateAuthError(raw))
     } finally {
       setIsLoading(false)
     }
@@ -84,9 +87,10 @@ export default function LoginPage() {
                 type="email"
                 placeholder="tu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setFormError(null) }}
                 required
                 disabled={isLoading}
+                aria-invalid={formError ? true : undefined}
               />
             </div>
             <div className="space-y-2">
@@ -97,9 +101,10 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Tu contraseña"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setFormError(null) }}
                   required
                   disabled={isLoading}
+                  aria-invalid={formError ? true : undefined}
                 />
                 <Button
                   type="button"
@@ -118,6 +123,11 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
+            {formError && (
+              <p role="alert" className="text-sm text-destructive text-center -mt-1 w-full">
+                {formError}
+              </p>
+            )}
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-md shadow-primary/20"

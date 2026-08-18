@@ -7,6 +7,7 @@ import { Search, Filter, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProductCard } from '@/components/product-card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@/lib/types'
@@ -260,8 +261,15 @@ export default function SearchPage() {
 
             {/* Grid */}
             {loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Cargando...</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="rounded-[24px] border border-border/40 p-4">
+                    <Skeleton className="h-48 rounded-2xl mb-4" />
+                    <Skeleton className="h-3 w-16 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                ))}
               </div>
             ) : results.length === 0 ? (
               <div className="glass rounded-lg border border-border p-12 text-center">
