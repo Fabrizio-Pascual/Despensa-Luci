@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/auth-provider'
 import { FavoritesProvider } from '@/components/favorites-context'
 import { ServiceWorkerRegister } from '@/components/sw-register'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
+import { DevNoticeBanner } from '@/components/dev-notice-banner'
 import { RouteLoadingBar } from '@/components/route-loading-bar'
 import { createClient } from '@/lib/supabase/server'
 import { getUserSafe } from '@/lib/supabase/get-user-safe'
@@ -93,6 +94,7 @@ export default async function RootLayout({
               <RouteLoadingBar />
               {children}
               <ServiceWorkerRegister />
+              <DevNoticeBanner />
               <CookieConsentBanner />
               <div id="portal-root" />
               <Toaster position="top-center" richColors closeButton duration={3000} />

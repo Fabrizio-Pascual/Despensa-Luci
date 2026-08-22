@@ -97,7 +97,7 @@ export default function SignUpPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
         </CardContent>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <CardContent className="space-y-4 pt-0">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nombre completo</Label>
