@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, Star, Gift } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, FileText, Store, Users, Tag, Home, Star, Gift, Settings } from 'lucide-react'
 import { AdminMobileNav } from '@/components/admin-mobile-nav'
 import { AdminNotifications } from '@/components/admin-notifications'
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/deudas', label: 'Deudas', icon: FileText },
   { href: '/admin/clientes', label: 'Clientes', icon: Users },
   { href: '/admin/resenas', label: 'Reseñas', icon: Star },
+  { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 export function AdminSidebarNav() {

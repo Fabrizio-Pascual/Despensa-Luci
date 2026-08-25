@@ -4,14 +4,16 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CreditCard, Banknote, FileText, Minus, Plus, Package, Trash2, AlertCircle, Loader2, Gift } from 'lucide-react'
+import { ArrowLeft, CreditCard, Banknote, FileText, Minus, Plus, Package, Trash2, AlertCircle, Loader2, Gift, StoreIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useCart } from '@/components/cart-context'
 import { createClient } from '@/lib/supabase/client'
+import { useStoreStatus } from '@/lib/hooks/useStoreStatus'
 import { toast } from 'sonner'
 
 function formatPrice(price: number): string {
@@ -30,6 +32,20 @@ export default function CheckoutPage() {
   const [fiadoHabilitado, setFiadoHabilitado] = useState(false)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+
+  // Estado manual de la tienda (lo prende/apaga el admin desde
+  // Admin → Configuración). Si está cerrada, avisamos antes de dejar
+  // pedir: el cliente elige seguir igual (se prepara al abrir) o
+  // cancelar y volver más tarde.
+  const { isOpen: storeOpen, closedMessage, loading: storeStatusLoading } = useStoreStatus()
+  const [showClosedDialog, setShowClosedDialog] = useState(false)
+  const [closedAcknowledged, setClosedAcknowledged] = useState(false)
+
+  useEffect(() => {
+    if (!storeStatusLoading && !storeOpen && !closedAcknowledged) {
+      setShowClosedDialog(true)
+    }
+  }, [storeStatusLoading, storeOpen, closedAcknowledged])
 
   // El checkout revisa si el cliente tiene "Fiado" habilitado desde
   // Admin → Clientes (columna can_fiar del perfil). Es el mismo
@@ -81,7 +97,8 @@ export default function CheckoutPage() {
 
       const notaFinal = [
         notes,
-        paymentMethod === 'efectivo' ? `Paga con: ${formatPrice(cashNum)}${cambio > 0 ? ` (vuelto: ${formatPrice(cambio)}${cambioAlto ? ' ⚠️ VUELTO ALTO, VERIFICAR CAMBIO DISPONIBLE' : ''})` : ''}` : ''
+        paymentMethod === 'efectivo' ? `Paga con: ${formatPrice(cashNum)}${cambio > 0 ? ` (vuelto: ${formatPrice(cambio)}${cambioAlto ? ' ⚠️ VUELTO ALTO, VERIFICAR CAMBIO DISPONIBLE' : ''})` : ''}` : '',
+        !storeOpen ? '⚠️ Pedido hecho con la tienda cerrada: el cliente aceptó que se prepare cuando abramos.' : ''
       ].filter(Boolean).join(' | ')
 
       const { data: order, error: orderError } = await supabase
@@ -393,9 +410,21 @@ export default function CheckoutPage() {
                 <span className="text-headline-sm text-foreground">Total</span>
                 <span className="text-headline-sm text-primary">{formatPrice(total)}</span>
               </div>
-              <Button className="w-full rounded-xl" size="lg" onClick={handleSubmit} loading={isSubmitting}>
+              <Button
+                className="w-full rounded-xl"
+                size="lg"
+                onClick={handleSubmit}
+                loading={isSubmitting}
+                disabled={!storeOpen && !closedAcknowledged}
+              >
                 {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
               </Button>
+              {!storeOpen && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 text-center mt-3 flex items-center justify-center gap-1.5">
+                  <StoreIcon className="h-3.5 w-3.5 shrink-0" />
+                  Estamos cerrados: tu pedido se prepara apenas abramos
+                </p>
+              )}
               <p className="text-xs text-muted-foreground text-center mt-4">
                 Te notificaremos cuando tu pedido esté listo para retirar 🧡
               </p>
@@ -403,6 +432,37 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showClosedDialog} onOpenChange={setShowClosedDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 shrink-0">
+                <StoreIcon className="h-5 w-5" />
+              </span>
+              <DialogTitle>Estamos cerrados</DialogTitle>
+            </div>
+            <DialogDescription className="text-left pt-1">
+              {closedMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => { setShowClosedDialog(false); router.push('/') }}
+            >
+              Cancelar y volver
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => { setClosedAcknowledged(true); setShowClosedDialog(false) }}
+            >
+              Continuar con mi pedido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,10 +1,29 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth-provider'
 import type { CartItem, Product, Combo } from '@/lib/types'
 import { toast } from 'sonner'
+
+// Cuando alguien sin sesión toca "agregar al carrito", no queremos
+// perder esa venta: guardamos qué quería agregar y, apenas inicia
+// sesión, se lo agregamos solos (ver el useEffect que escucha `user`).
+const GUEST_INTENT_KEY = 'despensa-luci-guest-cart-intent'
+
+type GuestCartIntent =
+  | { type: 'product'; productId: string; quantity: number; variantId: string | null; variantName: string | null }
+  | { type: 'combo'; comboId: string; quantity: number }
+
+function saveGuestIntent(intent: GuestCartIntent) {
+  try {
+    window.localStorage.setItem(GUEST_INTENT_KEY, JSON.stringify(intent))
+  } catch {
+    // localStorage no disponible (modo privado, etc.) — no es crítico,
+    // simplemente no vamos a poder recordar la intención.
+  }
+}
 
 interface CartItemExtended extends CartItem {
   product: Product
@@ -38,6 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const supabase = useMemo(() => createClient(), [])
   const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
 
   const refreshCart = useCallback(async () => {
     try {
@@ -66,7 +86,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = async (productId: string, quantity = 1, variantId: string | null = null, variantName: string | null = null) => {
     try {
-      if (!user) { toast.error('Iniciá sesión para agregar productos'); return }
+      if (!user) {
+        saveGuestIntent({ type: 'product', productId, quantity, variantId, variantName })
+        toast.info('Iniciá sesión para continuar: guardamos tu producto y lo agregamos apenas entres')
+        router.push('/auth/login')
+        return
+      }
 
       // Buscar si ya existe el mismo producto+variante
       const existing = items.find(i => i.product_id === productId && (i.variant_id || null) === variantId)
@@ -140,7 +165,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addCombo = async (comboId: string, quantity = 1) => {
     try {
-      if (!user) { toast.error('Iniciá sesión para agregar productos'); return }
+      if (!user) {
+        saveGuestIntent({ type: 'combo', comboId, quantity })
+        toast.info('Iniciá sesión para continuar: guardamos tu combo y lo agregamos apenas entres')
+        router.push('/auth/login')
+        return
+      }
 
       const existing = items.find(i => i.combo_id === comboId)
       if (existing) {
@@ -204,6 +234,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const total = items.reduce((sum, item) => sum + (priceOf(item) * item.quantity), 0)
+
+  // Apenas hay sesión (recién logueado o registrado), revisamos si
+  // había un producto/combo que quiso agregar sin estar logueado y lo
+  // completamos automáticamente, para no perder esa venta.
+  useEffect(() => {
+    if (authLoading || !user) return
+
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(GUEST_INTENT_KEY)
+    } catch {
+      return
+    }
+    if (!raw) return
+
+    try {
+      window.localStorage.removeItem(GUEST_INTENT_KEY)
+    } catch {}
+
+    try {
+      const intent = JSON.parse(raw) as GuestCartIntent
+      if (intent.type === 'product') {
+        addToCart(intent.productId, intent.quantity, intent.variantId, intent.variantName)
+      } else if (intent.type === 'combo') {
+        addCombo(intent.comboId, intent.quantity)
+      }
+    } catch {
+      // JSON corrupto o formato viejo: lo ignoramos, ya lo borramos arriba.
+    }
+    // Solo depende de que haya usuario disponible; addToCart/addCombo
+    // se recrean en cada render pero no queremos re-disparar este
+    // efecto por eso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading])
 
   return (
     <CartContext.Provider value={{ items, isLoading, itemCount, total, addToCart, removeFromCart, updateQuantity, addCombo, removeCombo, updateComboQuantity, clearCart, refreshCart }}>

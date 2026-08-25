@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Home, ShoppingCart, Package, Tag, BarChart3, FileText, Users, Star, Gift } from 'lucide-react'
+import { Menu, Home, ShoppingCart, Package, Tag, BarChart3, FileText, Users, Star, Gift, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/deudas', label: 'Deudas', icon: FileText },
   { href: '/admin/clientes', label: 'Clientes', icon: Users },
   { href: '/admin/resenas', label: 'Reseñas', icon: Star },
+  { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 export function AdminMobileNav() {

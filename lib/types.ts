@@ -155,3 +155,11 @@ export interface Combo {
   /** viene de combo_availability_view: cuántos combos se pueden armar ahora con el stock actual */
   available_qty?: number
 }
+
+export interface StoreSettings {
+  id: true
+  is_open: boolean
+  closed_message: string | null
+  updated_at: string
+  updated_by: string | null
+}

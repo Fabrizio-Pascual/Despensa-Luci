@@ -3,6 +3,7 @@ import { Clock, CheckCircle, Package, XCircle, AlertCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
+import { RepeatOrderButton } from '@/components/repeat-order-button'
 
 const statusConfig = {
   pending: { label: 'Pendiente', icon: Clock, variant: 'secondary' as const },
@@ -53,8 +54,8 @@ export default async function DashboardPage() {
             const StatusIcon = status.icon
 
             return (
-              <Link key={order.id} href={`/dashboard/pedidos/${order.id}`}>
-                <Card className="hover:border-primary/50 premium-transition cursor-pointer card-hover">
+              <Card key={order.id} className="hover:border-primary/50 premium-transition card-hover">
+                <Link href={`/dashboard/pedidos/${order.id}`}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>
@@ -71,7 +72,7 @@ export default async function DashboardPage() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-muted-foreground">
                         {order.order_items?.length} producto(s)
@@ -81,8 +82,13 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              </Link>
+                </Link>
+                {order.order_items && order.order_items.length > 0 && (
+                  <CardContent className="pt-0">
+                    <RepeatOrderButton items={order.order_items} className="w-full sm:w-auto" />
+                  </CardContent>
+                )}
+              </Card>
             )
           })}
         </div>

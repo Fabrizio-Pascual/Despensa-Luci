@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { OrderChat } from '@/components/order-chat'
 import { OrderEditor } from '@/components/order-editor'
+import { RepeatOrderButton } from '@/components/repeat-order-button'
 
 const statusConfig = {
   pending:   { label: 'Pendiente',          icon: Clock,        variant: 'secondary'   as const },
@@ -198,6 +199,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             {status.label}
           </Badge>
         </div>
+        {order.order_items && order.order_items.length > 0 && (
+          <RepeatOrderButton items={order.order_items} className="mt-4" />
+        )}
       </div>
 
       {!isCancelled && (
