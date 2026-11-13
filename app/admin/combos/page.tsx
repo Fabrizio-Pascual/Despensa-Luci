@@ -24,7 +24,7 @@ function formatPrice(price: number): string {
 
 interface SelectedProduct {
   product: Product
-  quantity: number
+  quantity: number | ''
 }
 
 export default function AdminCombosPage() {
@@ -95,17 +95,17 @@ export default function AdminCombosPage() {
     })
   }
 
-  const setQty = (productId: string, quantity: number) => {
+  const setQty = (productId: string, quantity: number | '') => {
     setSelected(prev => {
       const next = new Map(prev)
       const entry = next.get(productId)
-      if (entry) next.set(productId, { ...entry, quantity: Math.max(1, quantity) })
+      if (entry) next.set(productId, { ...entry, quantity: quantity === '' ? '' : Math.max(1, quantity) })
       return next
     })
   }
 
   const suggestedSum = useMemo(() =>
-    Array.from(selected.values()).reduce((sum, s) => sum + s.product.price * s.quantity, 0),
+    Array.from(selected.values()).reduce((sum, s) => sum + s.product.price * (Number(s.quantity) || 1), 0),
     [selected]
   )
 
@@ -146,7 +146,7 @@ export default function AdminCombosPage() {
       }
 
       const items = Array.from(selected.entries()).map(([productId, s]) => ({
-        combo_id: comboId, product_id: productId, quantity: s.quantity,
+        combo_id: comboId, product_id: productId, quantity: Number(s.quantity) || 1,
       }))
       const { error: itemsError } = await supabase.from('combo_items').insert(items)
       if (itemsError) throw itemsError
@@ -274,7 +274,8 @@ export default function AdminCombosPage() {
                           type="number"
                           min={1}
                           value={s.quantity}
-                          onChange={e => setQty(s.product.id, parseInt(e.target.value) || 1)}
+                          onChange={e => setQty(s.product.id, e.target.value === '' ? '' : parseInt(e.target.value))}
+                          onBlur={() => { if (s.quantity === '') setQty(s.product.id, 1) }}
                           className="h-6 w-12 px-1 text-xs"
                         />
                         <button onClick={() => toggleProduct(s.product)} className="ml-1 hover:text-destructive">

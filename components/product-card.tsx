@@ -102,13 +102,13 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="relative bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
       {/* Imagen */}
-      <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted block">
+      <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-gradient-to-br from-muted to-secondary/40 block">
         {effectiveImage ? (
           <Image
             src={effectiveImage}
             alt={product.name}
             fill
-            className="object-contain p-4 premium-transition group-hover:scale-110"
+            className="object-contain p-4 img-zoom"
             sizes="(max-width: 768px) 50vw, 300px"
           />
         ) : (
@@ -122,8 +122,8 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         )}
         {!isOutOfStock && effectiveStock <= 5 && (
-          <span className="absolute top-2 right-2 bg-warning text-warning-foreground text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-tighter">
-            Quedan {effectiveStock}
+          <span className="absolute top-2 right-2 bg-warning text-warning-foreground text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-tight pulse-soft">
+            ¡Quedan {effectiveStock}!
           </span>
         )}
       </Link>
@@ -172,18 +172,19 @@ export function ProductCard({ product }: { product: Product }) {
             <button
               onClick={handleAdd}
               disabled={isOutOfStock || isAdding}
-              className="w-10 h-10 bg-secondary/60 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-90 premium-transition disabled:opacity-40 disabled:pointer-events-none"
+              aria-label={`Agregar ${product.name} al carrito`}
+              className="tap-pop w-11 h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none"
             >
               {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2 pt-2">
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement} disabled={isUpdating} loading={isUpdating}>
+            <Button variant="outline" size="icon" aria-label="Quitar uno" className="h-10 w-10 rounded-full tap-pop" onClick={handleDecrement} disabled={isUpdating} loading={isUpdating}>
               <Minus className="h-3 w-3" />
             </Button>
-            <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock} loading={isUpdating}>
+            <span key={quantity} className="font-bold text-base min-w-[2rem] text-center cart-bump">{quantity}</span>
+            <Button variant="outline" size="icon" aria-label="Agregar uno" className="h-10 w-10 rounded-full tap-pop" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock} loading={isUpdating}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>

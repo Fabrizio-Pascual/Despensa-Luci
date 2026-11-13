@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: CategoryPageProps) {
     .from('categories')
     .select('name, description')
     .eq('slug', slug)
+    .eq('is_visible', true)
     .single()
 
   if (!category) {
@@ -41,6 +42,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     .from('categories')
     .select('*')
     .eq('slug', slug)
+    .eq('is_visible', true)
     .single()
 
   if (!category) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Search, Package, Plus, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,7 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const supabase = useMemo(() => createClient(), [])
   const { addToCart } = useCart()
+  const router = useRouter()
 
   const RECENT_KEY = 'recent_searches'
   const MAX_RECENT = 6
@@ -91,8 +93,9 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
     setIsLoading(true)
     const { data } = await supabase
       .from('products')
-      .select('*, category:categories(*)')
+      .select('*, category:categories!inner(*)')
       .eq('is_active', true)
+      .eq('category.is_visible', true)
       .ilike('name', `%${term.trim()}%`)
       .order('name')
       .limit(20)
@@ -142,11 +145,18 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
               autoFocus
               value={query}
               onChange={(e) => handleChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && query.trim()) {
+                  setOpen(false)
+                  router.push(`/buscar?q=${encodeURIComponent(query.trim())}`)
+                }
+              }}
+              enterKeyHint="search"
               placeholder="Buscá un producto por su nombre..."
               className="border-0 shadow-none focus-visible:ring-0 px-0 h-auto py-1"
             />
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />}
-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+            <button onClick={() => setOpen(false)} aria-label="Cerrar búsqueda" className="text-muted-foreground hover:text-foreground flex-shrink-0">
               <X className="h-4 w-4" />
             </button>
           </div>

@@ -29,7 +29,7 @@ export function Header() {
     // con el estado equivocado y quedarse así (no hay reintento).
     if (authLoading) return
     const loadCategories = async () => {
-      const { data } = await supabase.from('categories').select('*').order('display_order')
+      const { data } = await supabase.from('categories').select('*').eq('is_visible', true).order('display_order')
       setCategories(data || [])
     }
     loadCategories()

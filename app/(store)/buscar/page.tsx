@@ -24,10 +24,12 @@ export default function SearchPage() {
   const [sort, setSort] = useState<SortOption>('newest')
   const [searchInput, setSearchInput] = useState(query)
   const [showFilters, setShowFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    minPrice: 0,
-    maxPrice: 1000,
-    inStock: true
+  // Por defecto NO se filtra nada: antes el precio máximo era $1000 y "solo en stock"
+  // venía tildado, así que productos como el aceite quedaban afuera sin avisar.
+  const [filters, setFilters] = useState<{ minPrice: number | ''; maxPrice: number | ''; inStock: boolean }>({
+    minPrice: '',
+    maxPrice: '',
+    inStock: false,
   })
 
   useEffect(() => {
@@ -39,14 +41,17 @@ export default function SearchPage() {
     try {
       let queryBuilder = supabase
         .from('products')
-        .select('*, category:categories(name, slug)')
+        .select('*, category:categories!inner(name, slug, is_visible)')
         .eq('is_active', true)
+        .eq('category.is_visible', true)
 
       // Filtrar por query
       if (query) {
-        queryBuilder = queryBuilder.or(
-          `name.ilike.%${query}%,description.ilike.%${query}%`
-        )
+        // Quitamos caracteres que rompen la sintaxis del filtro .or()
+        const safe = query.replace(/[%,()*\\]/g, ' ').trim()
+        if (safe) {
+          queryBuilder = queryBuilder.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`)
+        }
       }
 
       // Filtro de stock
@@ -61,9 +66,9 @@ export default function SearchPage() {
       let filtered: Product[] = (data as Product[]) || []
 
       // Precio
-      filtered = filtered.filter(
-        (p: Product) => p.price >= filters.minPrice && p.price <= filters.maxPrice
-      )
+      const min = filters.minPrice === '' ? 0 : filters.minPrice
+      const max = filters.maxPrice === '' ? Infinity : filters.maxPrice
+      filtered = filtered.filter((p: Product) => p.price >= min && p.price <= max)
 
       // Ordenamiento
       if (sort === 'price-asc') {
@@ -148,20 +153,20 @@ export default function SearchPage() {
                   <Input
                     type="number"
                     min="0"
-                    placeholder="Min"
+                    placeholder="Mín"
                     value={filters.minPrice}
                     onChange={(e) =>
-                      setFilters({ ...filters, minPrice: Number(e.target.value) })
+                      setFilters({ ...filters, minPrice: e.target.value === '' ? '' : Number(e.target.value) })
                     }
                     className="h-9 text-sm"
                   />
                   <Input
                     type="number"
                     min="0"
-                    placeholder="Max"
+                    placeholder="Máx"
                     value={filters.maxPrice}
                     onChange={(e) =>
-                      setFilters({ ...filters, maxPrice: Number(e.target.value) })
+                      setFilters({ ...filters, maxPrice: e.target.value === '' ? '' : Number(e.target.value) })
                     }
                     className="h-9 text-sm"
                   />
@@ -207,7 +212,6 @@ export default function SearchPage() {
                   className="px-3 py-1 rounded border border-border bg-background text-sm"
                 >
                   <option value="newest">Más Nuevos</option>
-                  <option value="popular">Popular</option>
                   <option value="price-asc">Menor Precio</option>
                   <option value="price-desc">Mayor Precio</option>
                 </select>
@@ -225,20 +229,20 @@ export default function SearchPage() {
                     <Input
                       type="number"
                       min="0"
-                      placeholder="Min"
+                      placeholder="Mín"
                       value={filters.minPrice}
                       onChange={(e) =>
-                        setFilters({ ...filters, minPrice: Number(e.target.value) })
+                        setFilters({ ...filters, minPrice: e.target.value === '' ? '' : Number(e.target.value) })
                       }
                       className="h-9 text-sm"
                     />
                     <Input
                       type="number"
                       min="0"
-                      placeholder="Max"
+                      placeholder="Máx"
                       value={filters.maxPrice}
                       onChange={(e) =>
-                        setFilters({ ...filters, maxPrice: Number(e.target.value) })
+                        setFilters({ ...filters, maxPrice: e.target.value === '' ? '' : Number(e.target.value) })
                       }
                       className="h-9 text-sm"
                     />

@@ -26,14 +26,14 @@ export default async function FavoritesPage() {
 
   const { data: favorites } = await supabase
     .from('user_favorites')
-    .select('product:products(*, category:categories(name, slug))')
+    .select('product:products(*, category:categories(name, slug, is_visible))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   const products: Product[] = (
     (favorites || [])
       .map((f: any) => f.product)
-      .filter(Boolean)
+      .filter((p: any) => p && p.category?.is_visible !== false)
   ) as Product[]
 
   const productIds = products.map((p) => p.id)

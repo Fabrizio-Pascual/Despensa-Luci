@@ -21,6 +21,8 @@ export function useStoreStatus() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Nombre único por instancia: si varios componentes (o React Strict Mode) usan el
+    // mismo nombre, Supabase devuelve el canal ya suscripto y falla al agregar callbacks.
     const supabase = createClient()
     let mounted = true
 
@@ -41,7 +43,7 @@ export function useStoreStatus() {
     load()
 
     const channel = supabase
-      .channel('store-settings-changes')
+      .channel(`store-settings-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'store_settings' }, (payload: { new: StoreSettings }) => {
         if (!mounted) return
         const next = payload.new as StoreSettings

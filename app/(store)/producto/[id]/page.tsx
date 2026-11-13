@@ -27,7 +27,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const { data: product } = await supabase
     .from('products')
-    .select('*, category:categories(name, slug)')
+    .select('*, category:categories!inner(name, slug, is_visible)')
+    .eq('category.is_visible', true)
     .eq('id', id)
     .single()
 
@@ -42,7 +43,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const { data: related } = await supabase
     .from('products')
-    .select('*, category:categories(name, slug)')
+    .select('*, category:categories!inner(name, slug, is_visible)')
+    .eq('category.is_visible', true)
     .eq('category_id', product.category_id)
     .eq('is_active', true)
     .neq('id', id)

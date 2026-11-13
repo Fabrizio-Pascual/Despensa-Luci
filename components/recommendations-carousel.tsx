@@ -29,7 +29,8 @@ export function RecommendationsCarousel({
     try {
       let query = supabase
         .from('products')
-        .select('*, category:categories(name, slug)')
+        .select('*, category:categories!inner(name, slug, is_visible)')
+        .eq('category.is_visible', true)
         .eq('is_active', true)
         .gt('stock', 0)
 

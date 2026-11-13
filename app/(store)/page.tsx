@@ -14,11 +14,12 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: categories } = await supabase
-    .from('categories').select('*').order('display_order', { ascending: true })
+    .from('categories').select('*').eq('is_visible', true).order('display_order', { ascending: true })
 
   const { data: products } = await supabase
     .from('products')
-    .select('*, category:categories(name, slug)')
+    .select('*, category:categories!inner(name, slug, is_visible)')
+    .eq('category.is_visible', true)
     .eq('is_active', true).gt('stock', 0).limit(24)
 
   return (
@@ -30,7 +31,7 @@ export default async function HomePage() {
       <section className="relative pt-10 pb-16 md:pt-16 md:pb-24 container mx-auto px-4 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div className="relative z-10 reveal">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8 pulse-soft">
               <ShoppingBag className="h-3.5 w-3.5" />
               <span>Pedidos online · Retiro en local</span>
             </div>
@@ -43,7 +44,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold shadow-lg shadow-primary/20">
-                <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="#categorias" className="group/btn">Ver productos <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" /></Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold border-2">
                 <Link href={user ? '/como-comprar' : '/auth/login'}>{user ? 'Conocenos' : 'Ingresar'}</Link>

@@ -16,6 +16,8 @@ export interface Category {
   description: string | null
   image_url: string | null
   display_order: number
+  /** false = categoría oculta en la tienda (se administra desde Luci Fiados) */
+  is_visible: boolean
   created_at: string
 }
 

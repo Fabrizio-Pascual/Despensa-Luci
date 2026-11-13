@@ -1,0 +1,686 @@
+diff --git a/app/(store)/buscar/page.tsx b/app/(store)/buscar/page.tsx
+index 94a7a49..1c3de62 100644
+--- a/app/(store)/buscar/page.tsx
++++ b/app/(store)/buscar/page.tsx
+@@ -24,10 +24,12 @@ export default function SearchPage() {
+   const [sort, setSort] = useState<SortOption>('newest')
+   const [searchInput, setSearchInput] = useState(query)
+   const [showFilters, setShowFilters] = useState(false)
+-  const [filters, setFilters] = useState({
+-    minPrice: 0,
+-    maxPrice: 1000,
+-    inStock: true
++  // Por defecto NO se filtra nada: antes el precio máximo era $1000 y "solo en stock"
++  // venía tildado, así que productos como el aceite quedaban afuera sin avisar.
++  const [filters, setFilters] = useState<{ minPrice: number | ''; maxPrice: number | ''; inStock: boolean }>({
++    minPrice: '',
++    maxPrice: '',
++    inStock: false,
+   })
+ 
+   useEffect(() => {
+@@ -39,14 +41,17 @@ export default function SearchPage() {
+     try {
+       let queryBuilder = supabase
+         .from('products')
+-        .select('*, category:categories(name, slug)')
++        .select('*, category:categories!inner(name, slug, is_visible)')
+         .eq('is_active', true)
++        .eq('category.is_visible', true)
+ 
+       // Filtrar por query
+       if (query) {
+-        queryBuilder = queryBuilder.or(
+-          `name.ilike.%${query}%,description.ilike.%${query}%`
+-        )
++        // Quitamos caracteres que rompen la sintaxis del filtro .or()
++        const safe = query.replace(/[%,()*\\]/g, ' ').trim()
++        if (safe) {
++          queryBuilder = queryBuilder.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`)
++        }
+       }
+ 
+       // Filtro de stock
+@@ -61,9 +66,9 @@ export default function SearchPage() {
+       let filtered: Product[] = (data as Product[]) || []
+ 
+       // Precio
+-      filtered = filtered.filter(
+-        (p: Product) => p.price >= filters.minPrice && p.price <= filters.maxPrice
+-      )
++      const min = filters.minPrice === '' ? 0 : filters.minPrice
++      const max = filters.maxPrice === '' ? Infinity : filters.maxPrice
++      filtered = filtered.filter((p: Product) => p.price >= min && p.price <= max)
+ 
+       // Ordenamiento
+       if (sort === 'price-asc') {
+@@ -148,20 +153,20 @@ export default function SearchPage() {
+                   <Input
+                     type="number"
+                     min="0"
+-                    placeholder="Min"
++                    placeholder="Mín"
+                     value={filters.minPrice}
+                     onChange={(e) =>
+-                      setFilters({ ...filters, minPrice: Number(e.target.value) })
++                      setFilters({ ...filters, minPrice: e.target.value === '' ? '' : Number(e.target.value) })
+                     }
+                     className="h-9 text-sm"
+                   />
+                   <Input
+                     type="number"
+                     min="0"
+-                    placeholder="Max"
++                    placeholder="Máx"
+                     value={filters.maxPrice}
+                     onChange={(e) =>
+-                      setFilters({ ...filters, maxPrice: Number(e.target.value) })
++                      setFilters({ ...filters, maxPrice: e.target.value === '' ? '' : Number(e.target.value) })
+                     }
+                     className="h-9 text-sm"
+                   />
+@@ -207,7 +212,6 @@ export default function SearchPage() {
+                   className="px-3 py-1 rounded border border-border bg-background text-sm"
+                 >
+                   <option value="newest">Más Nuevos</option>
+-                  <option value="popular">Popular</option>
+                   <option value="price-asc">Menor Precio</option>
+                   <option value="price-desc">Mayor Precio</option>
+                 </select>
+@@ -225,20 +229,20 @@ export default function SearchPage() {
+                     <Input
+                       type="number"
+                       min="0"
+-                      placeholder="Min"
++                      placeholder="Mín"
+                       value={filters.minPrice}
+                       onChange={(e) =>
+-                        setFilters({ ...filters, minPrice: Number(e.target.value) })
++                        setFilters({ ...filters, minPrice: e.target.value === '' ? '' : Number(e.target.value) })
+                       }
+                       className="h-9 text-sm"
+                     />
+                     <Input
+                       type="number"
+                       min="0"
+-                      placeholder="Max"
++                      placeholder="Máx"
+                       value={filters.maxPrice}
+                       onChange={(e) =>
+-                        setFilters({ ...filters, maxPrice: Number(e.target.value) })
++                        setFilters({ ...filters, maxPrice: e.target.value === '' ? '' : Number(e.target.value) })
+                       }
+                       className="h-9 text-sm"
+                     />
+diff --git a/app/(store)/categorias/[slug]/page.tsx b/app/(store)/categorias/[slug]/page.tsx
+index 63078d3..7441792 100644
+--- a/app/(store)/categorias/[slug]/page.tsx
++++ b/app/(store)/categorias/[slug]/page.tsx
+@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: CategoryPageProps) {
+     .from('categories')
+     .select('name, description')
+     .eq('slug', slug)
++    .eq('is_visible', true)
+     .single()
+ 
+   if (!category) {
+@@ -41,6 +42,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
+     .from('categories')
+     .select('*')
+     .eq('slug', slug)
++    .eq('is_visible', true)
+     .single()
+ 
+   if (!category) {
+diff --git a/app/(store)/categorias/page.tsx b/app/(store)/categorias/page.tsx
+index e67cfc9..edc0f34 100644
+--- a/app/(store)/categorias/page.tsx
++++ b/app/(store)/categorias/page.tsx
+@@ -12,6 +12,7 @@ export default async function CategoriasPage() {
+   const { data: categories } = await supabase
+     .from('categories')
+     .select('*')
++    .eq('is_visible', true)
+     .order('display_order', { ascending: true })
+ 
+   return (
+diff --git a/app/(store)/favoritos/page.tsx b/app/(store)/favoritos/page.tsx
+index a71fba0..de11e60 100644
+--- a/app/(store)/favoritos/page.tsx
++++ b/app/(store)/favoritos/page.tsx
+@@ -26,14 +26,14 @@ export default async function FavoritesPage() {
+ 
+   const { data: favorites } = await supabase
+     .from('user_favorites')
+-    .select('product:products(*, category:categories(name, slug))')
++    .select('product:products(*, category:categories(name, slug, is_visible))')
+     .eq('user_id', user.id)
+     .order('created_at', { ascending: false })
+ 
+   const products: Product[] = (
+     (favorites || [])
+       .map((f: any) => f.product)
+-      .filter(Boolean)
++      .filter((p: any) => p && p.category?.is_visible !== false)
+   ) as Product[]
+ 
+   const productIds = products.map((p) => p.id)
+diff --git a/app/(store)/page.tsx b/app/(store)/page.tsx
+index 0f0a65f..024c2a5 100644
+--- a/app/(store)/page.tsx
++++ b/app/(store)/page.tsx
+@@ -14,11 +14,12 @@ export default async function HomePage() {
+   const { data: { user } } = await supabase.auth.getUser()
+ 
+   const { data: categories } = await supabase
+-    .from('categories').select('*').order('display_order', { ascending: true })
++    .from('categories').select('*').eq('is_visible', true).order('display_order', { ascending: true })
+ 
+   const { data: products } = await supabase
+     .from('products')
+-    .select('*, category:categories(name, slug)')
++    .select('*, category:categories!inner(name, slug, is_visible)')
++    .eq('category.is_visible', true)
+     .eq('is_active', true).gt('stock', 0).limit(24)
+ 
+   return (
+@@ -30,7 +31,7 @@ export default async function HomePage() {
+       <section className="relative pt-10 pb-16 md:pt-16 md:pb-24 container mx-auto px-4 overflow-hidden">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+           <div className="relative z-10 reveal">
+-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8">
++            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-label-bold mb-8 pulse-soft">
+               <ShoppingBag className="h-3.5 w-3.5" />
+               <span>Pedidos online · Retiro en local</span>
+             </div>
+@@ -43,7 +44,7 @@ export default async function HomePage() {
+             </p>
+             <div className="flex flex-col sm:flex-row gap-4">
+               <Button size="lg" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold shadow-lg shadow-primary/20">
+-                <Link href="#categorias">Ver productos <ArrowRight className="ml-2 h-4 w-4" /></Link>
++                <Link href="#categorias" className="group/btn">Ver productos <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" /></Link>
+               </Button>
+               <Button size="lg" variant="outline" asChild className="rounded-xl px-8 h-auto py-4 text-label-bold border-2">
+                 <Link href={user ? '/como-comprar' : '/auth/login'}>{user ? 'Conocenos' : 'Ingresar'}</Link>
+diff --git a/app/(store)/producto/[id]/page.tsx b/app/(store)/producto/[id]/page.tsx
+index b873a51..9778305 100644
+--- a/app/(store)/producto/[id]/page.tsx
++++ b/app/(store)/producto/[id]/page.tsx
+@@ -27,7 +27,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
+ 
+   const { data: product } = await supabase
+     .from('products')
+-    .select('*, category:categories(name, slug)')
++    .select('*, category:categories!inner(name, slug, is_visible)')
++    .eq('category.is_visible', true)
+     .eq('id', id)
+     .single()
+ 
+@@ -42,7 +43,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
+ 
+   const { data: related } = await supabase
+     .from('products')
+-    .select('*, category:categories(name, slug)')
++    .select('*, category:categories!inner(name, slug, is_visible)')
++    .eq('category.is_visible', true)
+     .eq('category_id', product.category_id)
+     .eq('is_active', true)
+     .neq('id', id)
+diff --git a/app/admin/combos/page.tsx b/app/admin/combos/page.tsx
+index a147552..6d02448 100644
+--- a/app/admin/combos/page.tsx
++++ b/app/admin/combos/page.tsx
+@@ -24,7 +24,7 @@ function formatPrice(price: number): string {
+ 
+ interface SelectedProduct {
+   product: Product
+-  quantity: number
++  quantity: number | ''
+ }
+ 
+ export default function AdminCombosPage() {
+@@ -95,17 +95,17 @@ export default function AdminCombosPage() {
+     })
+   }
+ 
+-  const setQty = (productId: string, quantity: number) => {
++  const setQty = (productId: string, quantity: number | '') => {
+     setSelected(prev => {
+       const next = new Map(prev)
+       const entry = next.get(productId)
+-      if (entry) next.set(productId, { ...entry, quantity: Math.max(1, quantity) })
++      if (entry) next.set(productId, { ...entry, quantity: quantity === '' ? '' : Math.max(1, quantity) })
+       return next
+     })
+   }
+ 
+   const suggestedSum = useMemo(() =>
+-    Array.from(selected.values()).reduce((sum, s) => sum + s.product.price * s.quantity, 0),
++    Array.from(selected.values()).reduce((sum, s) => sum + s.product.price * (Number(s.quantity) || 1), 0),
+     [selected]
+   )
+ 
+@@ -146,7 +146,7 @@ export default function AdminCombosPage() {
+       }
+ 
+       const items = Array.from(selected.entries()).map(([productId, s]) => ({
+-        combo_id: comboId, product_id: productId, quantity: s.quantity,
++        combo_id: comboId, product_id: productId, quantity: Number(s.quantity) || 1,
+       }))
+       const { error: itemsError } = await supabase.from('combo_items').insert(items)
+       if (itemsError) throw itemsError
+@@ -274,7 +274,8 @@ export default function AdminCombosPage() {
+                           type="number"
+                           min={1}
+                           value={s.quantity}
+-                          onChange={e => setQty(s.product.id, parseInt(e.target.value) || 1)}
++                          onChange={e => setQty(s.product.id, e.target.value === '' ? '' : parseInt(e.target.value))}
++                          onBlur={() => { if (s.quantity === '') setQty(s.product.id, 1) }}
+                           className="h-6 w-12 px-1 text-xs"
+                         />
+                         <button onClick={() => toggleProduct(s.product)} className="ml-1 hover:text-destructive">
+diff --git a/app/admin/variants/sheet.tsx b/app/admin/variants/sheet.tsx
+index 8a1f496..090bd15 100644
+--- a/app/admin/variants/sheet.tsx
++++ b/app/admin/variants/sheet.tsx
+@@ -74,12 +74,23 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+     setIsSaving(false)
+   }
+ 
+-  const handleUpdate = async (id: string, field: string, value: any) => {
++  // Cambia solo en pantalla (así se puede borrar el número y escribir normal)
++  const updateLocal = (id: string, field: string, value: any) => {
++    setVariants(prev => prev.map(v => (v.id === id ? { ...v, [field]: value } : v)))
++  }
++
++  // Guarda en la base (texto/número al salir del campo; el switch al toque)
++  const persist = async (id: string, field: string, value: any) => {
+     const { error } = await supabase
+       .from('product_variants')
+       .update({ [field]: value, updated_at: new Date().toISOString() })
+       .eq('id', id)
+-    if (!error) loadVariants()
++    if (error) toast.error('No se pudo guardar el cambio')
++  }
++
++  const handleUpdate = (id: string, field: string, value: any) => {
++    updateLocal(id, field, value)
++    persist(id, field, value)
+   }
+ 
+   const handleDelete = async (id: string) => {
+@@ -156,7 +167,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+                       )}
+                       <Input
+                         value={variant.name}
+-                        onChange={e => handleUpdate(variant.id, 'name', e.target.value)}
++                        onChange={e => updateLocal(variant.id, 'name', e.target.value)}
++                        onBlur={e => persist(variant.id, 'name', e.target.value)}
+                         className="h-7 text-sm font-medium w-32"
+                       />
+                     </div>
+@@ -176,7 +188,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+                       <Input
+                         type="number"
+                         value={variant.stock}
+-                        onChange={e => handleUpdate(variant.id, 'stock', parseInt(e.target.value) || 0)}
++                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? '' : Number(e.target.value))}
++                        onBlur={e => persist(variant.id, 'stock', parseInt(e.target.value) || 0)}
+                         className="h-7 text-sm"
+                       />
+                     </div>
+@@ -185,7 +198,8 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+                       <Input
+                         type="number"
+                         value={variant.price_modifier}
+-                        onChange={e => handleUpdate(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
++                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? '' : Number(e.target.value))}
++                        onBlur={e => persist(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
+                         className="h-7 text-sm"
+                       />
+                     </div>
+diff --git a/app/globals.css b/app/globals.css
+index 73735ef..e7853c7 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -351,6 +351,57 @@ body {
+   background-clip: text;
+   color: transparent;
+ }
++/* === Rediseño: botones, carteles y microanimaciones (solo tokens del tema) === */
++
++/* Brillo que cruza el botón principal al pasar el mouse / tocar */
++.btn-shine { position: relative; overflow: hidden; isolation: isolate; }
++.btn-shine::after {
++  content: '';
++  position: absolute;
++  inset: 0;
++  z-index: -1;
++  background: linear-gradient(110deg, transparent 30%, color-mix(in oklch, white 38%, transparent) 50%, transparent 70%);
++  transform: translateX(-120%);
++}
++.btn-shine:hover::after { transform: translateX(120%); transition: transform 700ms ease; }
++
++/* Latido suave para llamar la atención (ofertas, "Quedan pocos") */
++@keyframes soft-pulse {
++  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 35%, transparent); }
++  50% { transform: scale(1.05); box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 0%, transparent); }
++}
++.pulse-soft { animation: soft-pulse 2.4s ease-in-out infinite; }
++
++/* Cartel tipo cinta para ofertas / novedades */
++.ribbon {
++  display: inline-flex; align-items: center; gap: 0.25rem;
++  background: linear-gradient(135deg, var(--primary), var(--accent));
++  color: var(--primary-foreground);
++  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
++  padding: 0.3rem 0.7rem; border-radius: 9999px;
++  box-shadow: 0 6px 16px color-mix(in oklch, var(--primary) 35%, transparent);
++}
++
++/* Cascada: cada hijo entra con un pequeño retraso (hasta 12) */
++.reveal-sequential > *:nth-child(5) { animation-delay: 320ms; }
++.reveal-sequential > *:nth-child(6) { animation-delay: 400ms; }
++.reveal-sequential > *:nth-child(7) { animation-delay: 480ms; }
++.reveal-sequential > *:nth-child(8) { animation-delay: 560ms; }
++.reveal-sequential > *:nth-child(n+9) { animation-delay: 640ms; }
++
++/* Botón redondo de "agregar": rebote al tocar */
++.tap-pop { transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms, color 200ms; }
++.tap-pop:hover { transform: scale(1.12) rotate(-6deg); }
++.tap-pop:active { transform: scale(0.88); }
++
++/* Imagen con zoom lento y brillo al entrar el mouse */
++.img-zoom { transition: transform 700ms cubic-bezier(0.4, 0, 0.2, 1), filter 400ms; }
++.group:hover .img-zoom { transform: scale(1.08); filter: saturate(1.08); }
++
++/* Subrayado animado para links de texto */
++.link-underline { background: linear-gradient(currentColor, currentColor) 0 100% / 0 2px no-repeat; transition: background-size 300ms; }
++.link-underline:hover { background-size: 100% 2px; }
++
+ /* ============================================================
+    Accesibilidad: respeta la preferencia del sistema operativo
+    "reducir movimiento". Apaga animaciones decorativas (reveal,
+@@ -380,3 +431,8 @@ body {
+     transform: none !important;
+   }
+ }
++
++@media (prefers-reduced-motion: reduce) {
++  .pulse-soft, .btn-shine::after { animation: none !important; transition: none !important; }
++  .tap-pop:hover, .group:hover .img-zoom { transform: none !important; }
++}
+diff --git a/components/admin-variants-sheet.tsx b/components/admin-variants-sheet.tsx
+index fbe3053..563145f 100644
+--- a/components/admin-variants-sheet.tsx
++++ b/components/admin-variants-sheet.tsx
+@@ -192,7 +192,7 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+                       <Input
+                         type="number"
+                         value={variant.stock}
+-                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? 0 : Number(e.target.value))}
++                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? '' : Number(e.target.value))}
+                         onBlur={e => persist(variant.id, 'stock', parseInt(e.target.value) || 0)}
+                         className="h-7 text-sm"
+                       />
+@@ -202,7 +202,7 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
+                       <Input
+                         type="number"
+                         value={variant.price_modifier}
+-                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? 0 : Number(e.target.value))}
++                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? '' : Number(e.target.value))}
+                         onBlur={e => persist(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
+                         className="h-7 text-sm"
+                       />
+diff --git a/components/category-card.tsx b/components/category-card.tsx
+index f94930a..e306e73 100644
+--- a/components/category-card.tsx
++++ b/components/category-card.tsx
+@@ -1,6 +1,6 @@
+ import Link from 'next/link'
+ import Image from 'next/image'
+-import { ShoppingBasket } from 'lucide-react'
++import { ShoppingBasket, ArrowUpRight } from 'lucide-react'
+ import type { Category } from '@/lib/types'
+ 
+ // Category icons mapping
+@@ -32,7 +32,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
+             src={imageUrl}
+             alt={category.name}
+             fill
+-            className="object-cover premium-transition group-hover:scale-110"
++            className="object-cover img-zoom"
+             sizes="(max-width: 768px) 50vw, 300px"
+           />
+         ) : (
+@@ -41,7 +41,10 @@ export function CategoryCard({ category }: CategoryCardProps) {
+           </div>
+         )}
+         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent premium-transition" />
+-        <div className="absolute bottom-0 left-0 p-6">
++        <div className="absolute top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-primary opacity-0 translate-y-2 scale-90 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 premium-transition max-md:opacity-100 max-md:translate-y-0 max-md:scale-100">
++          <ArrowUpRight className="h-4 w-4" />
++        </div>
++        <div className="absolute bottom-0 left-0 p-6 group-hover:-translate-y-1 premium-transition">
+           <h3 className="text-headline-sm text-foreground mb-2">{category.name}</h3>
+           {category.description && (
+             <p className="text-sm text-muted-foreground line-clamp-1">{category.description}</p>
+diff --git a/components/header.tsx b/components/header.tsx
+index c22ebb9..459f22a 100644
+--- a/components/header.tsx
++++ b/components/header.tsx
+@@ -29,7 +29,7 @@ export function Header() {
+     // con el estado equivocado y quedarse así (no hay reintento).
+     if (authLoading) return
+     const loadCategories = async () => {
+-      const { data } = await supabase.from('categories').select('*').order('display_order')
++      const { data } = await supabase.from('categories').select('*').eq('is_visible', true).order('display_order')
+       setCategories(data || [])
+     }
+     loadCategories()
+diff --git a/components/product-card.tsx b/components/product-card.tsx
+index db67e41..546a699 100644
+--- a/components/product-card.tsx
++++ b/components/product-card.tsx
+@@ -102,13 +102,13 @@ export function ProductCard({ product }: { product: Product }) {
+   return (
+     <div className="relative bg-card border border-border/40 rounded-[24px] p-4 group premium-transition card-hover">
+       {/* Imagen */}
+-      <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-muted block">
++      <Link href={`/producto/${product.id}`} className="relative h-48 rounded-2xl overflow-hidden mb-4 bg-gradient-to-br from-muted to-secondary/40 block">
+         {effectiveImage ? (
+           <Image
+             src={effectiveImage}
+             alt={product.name}
+             fill
+-            className="object-contain p-4 premium-transition group-hover:scale-110"
++            className="object-contain p-4 img-zoom"
+             sizes="(max-width: 768px) 50vw, 300px"
+           />
+         ) : (
+@@ -122,8 +122,8 @@ export function ProductCard({ product }: { product: Product }) {
+           </div>
+         )}
+         {!isOutOfStock && effectiveStock <= 5 && (
+-          <span className="absolute top-2 right-2 bg-warning text-warning-foreground text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-tighter">
+-            Quedan {effectiveStock}
++          <span className="absolute top-2 right-2 bg-warning text-warning-foreground text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-tight pulse-soft">
++            ¡Quedan {effectiveStock}!
+           </span>
+         )}
+       </Link>
+@@ -172,18 +172,19 @@ export function ProductCard({ product }: { product: Product }) {
+             <button
+               onClick={handleAdd}
+               disabled={isOutOfStock || isAdding}
+-              className="w-10 h-10 bg-secondary/60 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 active:scale-90 premium-transition disabled:opacity-40 disabled:pointer-events-none"
++              aria-label={`Agregar ${product.name} al carrito`}
++              className="tap-pop w-11 h-11 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none"
+             >
+               {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
+             </button>
+           </div>
+         ) : (
+           <div className="flex items-center justify-between gap-2 pt-2">
+-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleDecrement} disabled={isUpdating} loading={isUpdating}>
++            <Button variant="outline" size="icon" aria-label="Quitar uno" className="h-10 w-10 rounded-full tap-pop" onClick={handleDecrement} disabled={isUpdating} loading={isUpdating}>
+               <Minus className="h-3 w-3" />
+             </Button>
+-            <span className="font-semibold text-base min-w-[2rem] text-center">{quantity}</span>
+-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock} loading={isUpdating}>
++            <span key={quantity} className="font-bold text-base min-w-[2rem] text-center cart-bump">{quantity}</span>
++            <Button variant="outline" size="icon" aria-label="Agregar uno" className="h-10 w-10 rounded-full tap-pop" onClick={handleIncrement} disabled={isUpdating || quantity >= effectiveStock} loading={isUpdating}>
+               <Plus className="h-3 w-3" />
+             </Button>
+           </div>
+diff --git a/components/product-search.tsx b/components/product-search.tsx
+index 7c5e9d8..783162b 100644
+--- a/components/product-search.tsx
++++ b/components/product-search.tsx
+@@ -3,6 +3,7 @@
+ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
+ import Image from 'next/image'
+ import Link from 'next/link'
++import { useRouter } from 'next/navigation'
+ import { Search, Package, Plus, X, Loader2 } from 'lucide-react'
+ import { Button } from '@/components/ui/button'
+ import { Input } from '@/components/ui/input'
+@@ -27,6 +28,7 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
+   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+   const supabase = useMemo(() => createClient(), [])
+   const { addToCart } = useCart()
++  const router = useRouter()
+ 
+   const RECENT_KEY = 'recent_searches'
+   const MAX_RECENT = 6
+@@ -91,8 +93,9 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
+     setIsLoading(true)
+     const { data } = await supabase
+       .from('products')
+-      .select('*, category:categories(*)')
++      .select('*, category:categories!inner(*)')
+       .eq('is_active', true)
++      .eq('category.is_visible', true)
+       .ilike('name', `%${term.trim()}%`)
+       .order('name')
+       .limit(20)
+@@ -142,11 +145,18 @@ export function ProductSearch({ renderTrigger }: { renderTrigger?: (onOpen: () =
+               autoFocus
+               value={query}
+               onChange={(e) => handleChange(e.target.value)}
++              onKeyDown={(e) => {
++                if (e.key === 'Enter' && query.trim()) {
++                  setOpen(false)
++                  router.push(`/buscar?q=${encodeURIComponent(query.trim())}`)
++                }
++              }}
++              enterKeyHint="search"
+               placeholder="Buscá un producto por su nombre..."
+               className="border-0 shadow-none focus-visible:ring-0 px-0 h-auto py-1"
+             />
+             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />}
+-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
++            <button onClick={() => setOpen(false)} aria-label="Cerrar búsqueda" className="text-muted-foreground hover:text-foreground flex-shrink-0">
+               <X className="h-4 w-4" />
+             </button>
+           </div>
+diff --git a/components/recommendations-carousel.tsx b/components/recommendations-carousel.tsx
+index 0c1d15e..e368dc0 100644
+--- a/components/recommendations-carousel.tsx
++++ b/components/recommendations-carousel.tsx
+@@ -29,7 +29,8 @@ export function RecommendationsCarousel({
+     try {
+       let query = supabase
+         .from('products')
+-        .select('*, category:categories(name, slug)')
++        .select('*, category:categories!inner(name, slug, is_visible)')
++        .eq('category.is_visible', true)
+         .eq('is_active', true)
+         .gt('stock', 0)
+ 
+diff --git a/components/ui/button.tsx b/components/ui/button.tsx
+index 83a2ee1..59c5578 100644
+--- a/components/ui/button.tsx
++++ b/components/ui/button.tsx
+@@ -8,15 +8,15 @@ import { Loader2Icon } from 'lucide-react'
+ import { cn } from '@/lib/utils'
+ 
+ const buttonVariants = cva(
+-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
++  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+   {
+     variants: {
+       variant: {
+-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
++        default: 'btn-shine bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30',
+         destructive:
+           'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+         outline:
+-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
++          'border bg-background shadow-xs hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+         secondary:
+           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+         ghost:
+@@ -24,7 +24,7 @@ const buttonVariants = cva(
+         link: 'text-primary underline-offset-4 hover:underline',
+       },
+       size: {
+-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
++        default: 'h-10 px-4 py-2 has-[>svg]:px-3',
+         sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
+         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
+         icon: 'size-9',
+diff --git a/lib/hooks/useStoreStatus.ts b/lib/hooks/useStoreStatus.ts
+index dac0d16..06f5f56 100644
+--- a/lib/hooks/useStoreStatus.ts
++++ b/lib/hooks/useStoreStatus.ts
+@@ -21,6 +21,8 @@ export function useStoreStatus() {
+   const [loading, setLoading] = useState(true)
+ 
+   useEffect(() => {
++    // Nombre único por instancia: si varios componentes (o React Strict Mode) usan el
++    // mismo nombre, Supabase devuelve el canal ya suscripto y falla al agregar callbacks.
+     const supabase = createClient()
+     let mounted = true
+ 
+@@ -41,7 +43,7 @@ export function useStoreStatus() {
+     load()
+ 
+     const channel = supabase
+-      .channel('store-settings-changes')
++      .channel(`store-settings-${Math.random().toString(36).slice(2)}`)
+       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'store_settings' }, (payload: { new: StoreSettings }) => {
+         if (!mounted) return
+         const next = payload.new as StoreSettings
+diff --git a/lib/types.ts b/lib/types.ts
+index 59e7137..bfe08f6 100644
+--- a/lib/types.ts
++++ b/lib/types.ts
+@@ -16,6 +16,8 @@ export interface Category {
+   description: string | null
+   image_url: string | null
+   display_order: number
++  /** false = categoría oculta en la tienda (se administra desde Luci Fiados) */
++  is_visible: boolean
+   created_at: string
+ }
+ 
+diff --git a/supabase/migration_categorias_visibles.sql b/supabase/migration_categorias_visibles.sql
+new file mode 100644
+index 0000000..f0ed71e
+--- /dev/null
++++ b/supabase/migration_categorias_visibles.sql
+@@ -0,0 +1,13 @@
++-- ---------------------------------------------------------------------
++-- CATEGORÍAS VISIBLES: poder ocultar una categoría en la tienda
++-- ---------------------------------------------------------------------
++-- La tienda ya filtra por categories.is_visible. Sin esta columna las
++-- consultas fallan y no aparecen ni productos ni categorías.
++-- Se maneja desde la app de Fiados (misma base de Supabase).
++-- Ejecutar UNA vez en el SQL Editor de Supabase.
++
++alter table public.categories
++  add column if not exists is_visible boolean not null default true;
++
++-- Las categorías existentes quedan visibles.
++update public.categories set is_visible = true where is_visible is null;

@@ -192,7 +192,7 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                       <Input
                         type="number"
                         value={variant.stock}
-                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? 0 : Number(e.target.value))}
+                        onChange={e => updateLocal(variant.id, 'stock', e.target.value === '' ? '' : Number(e.target.value))}
                         onBlur={e => persist(variant.id, 'stock', parseInt(e.target.value) || 0)}
                         className="h-7 text-sm"
                       />
@@ -202,7 +202,7 @@ export function VariantsSheet({ productId, productName, open, onClose }: Variant
                       <Input
                         type="number"
                         value={variant.price_modifier}
-                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? 0 : Number(e.target.value))}
+                        onChange={e => updateLocal(variant.id, 'price_modifier', e.target.value === '' ? '' : Number(e.target.value))}
                         onBlur={e => persist(variant.id, 'price_modifier', parseFloat(e.target.value) || 0)}
                         className="h-7 text-sm"
                       />
